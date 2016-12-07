@@ -1,0 +1,98 @@
+<html>
+
+<head>
+</head>
+
+<body>
+    <div id="app">
+        <input type="text" name="name"><br>
+        <input type="text" name="age"><br>
+        <input type="checkbox" name="actor"><br>
+        <div>
+            <input name="address.country">
+        </div>
+        <input type="text" name="email"><br>
+        <p> {{ name }} </p>
+        <p> {{ age }}</p>
+        <p> {{ address.country }} </p>
+        <p> {{ email }} </p>
+    </div>
+    <script src="../src/rudy.min.js"></script>
+    <script>
+        // let's start timing, just for fun
+        console.time('Timer');
+
+        // this is a utility function to make an AJAX request. it's not part of Rudy. we'll use it down below to bind the view to a server response
+        function get(url, callback) {
+            var request = new XMLHttpRequest();
+            request.open('GET', url, true);
+            request.onload = function () {
+                if (request.readyState != 4 || request.status != 200) callback(true);
+                else callback(null, JSON.parse(request.responseText));
+            }; 
+            try {
+                request.send();
+            }
+            catch (error) {}
+        }
+
+        // hang on to the returned object! you can do stuff with it later
+        var person = rudy(
+
+            // specify the tag id where you want to render your component
+            'app',
+
+            // the component behaviour is fed as object properties
+            {
+
+                // enter your initial data
+                data : {
+                    name: 'John',
+                    age: 30,
+                    address: {
+                        country: 'Canada'
+                    },
+                    actor: true
+                },
+
+                // this function is called before the first render
+                create: function() {
+                    var vm = this;
+
+                    vm.name = 'James';
+                    vm.age = 25;
+                    vm.actor = false;
+                    
+                    // asynchronous binding updates allowed!
+                    get(
+                        'https://jsonplaceholder.typicode.com/comments/1',
+                        function(error, body) {
+                            
+                            // notice that email wasn't originally a property of the data object
+                            if (body) vm.email = body.email;
+                        }
+                    );
+                }
+            }
+        );
+
+        // you don't need to be inside your component object to update the data. let's change an existing value
+        person.data.name='Micheal';
+
+        // go ahead, overwrite the whole data object
+        person.data = {
+            name: 'Bonita',
+            age: 55
+        };
+
+        // let's add back some values we wiped away
+        person.data.address = {country: 'Colombia'};
+        person.data.actor = true;
+
+        // it's pretty fast!
+        console.timeEnd('Timer');
+        
+    </script>
+</body>
+
+</html>
