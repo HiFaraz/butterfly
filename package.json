@@ -1,0 +1,12 @@
+{
+  "name": "rudy",
+  "version": "0.0.0",
+  "description": "An experimental front-end package",
+  "main": "index.js",
+  "repository": {
+    "url": "https://hifaraz@github.com/HiFaraz/rudy.git",
+    "type": "git"
+  },
+  "author": "Faraz Syed <hello@farazsyed.com>",
+  "license": "UNLICENSED"
+}
