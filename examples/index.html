@@ -5,6 +5,7 @@
 
 <body>
     <div id="app">
+        <input type="text"><br>
         <input type="text" name="name"><br>
         <input type="range" name="age"><br>
         <input type="text" name="doubleAge"><br>
@@ -19,11 +20,13 @@
         </select>
         <p> {{ name }} </p>
         <p> {{ age }} </p>
+        <p> {{ age }} {{ gender }} </p>
         <p> {{ doubleAge }} </p>
         <p> {{ address.country }} </p>
         <p> {{ email }} </p>
         <p> {{ gender }} </p>
     </div>
+    <script src="../../proxyfull/src/proxyfull.js"></script>
     <script src="../src/rudy.js"></script>
     <script>
 
@@ -33,27 +36,40 @@
         console.time('Timer');
 
         // this is a utility function to make an AJAX request. it's not part of Rudy. we'll use it down below to bind the view to a server response
-        function get(url, callback) {
-            var request = new XMLHttpRequest();
-            request.open('GET', url, true);
-            request.onload = function () {
-                if (request.readyState != 4 || request.status != 200) callback(true);
-                else callback(null, JSON.parse(request.responseText));
-            }; 
-            try {
-                request.send();
-            }
-            catch (error) {}
+        function getResource(url, callback) {
+
+            return new Promise(function(resolve,reject) {
+
+                var request = new XMLHttpRequest();
+                request.open('GET', url, true);
+                request.onload = function () {
+                    if (request.readyState != 4 || request.status != 200) reject();
+                    else resolve(JSON.parse(request.responseText));
+                }; 
+                try {
+                    request.send();
+                }
+                catch (error) {
+                    reject(error);
+                }
+
+            });
+
+        }
+
+        // another utility function - to show you that proxyfull keeps data parity
+        function compare(a,b) {
+            console.log('COMPARE', a==b, a, b);
         }
 
         // hang on to the returned object! you can do stuff with it later
         var person = rudy(
 
-            // specify the tag id where you want to render your component
-            'app',
-
             // the component behaviour is fed as object properties
             {
+
+                // specify the tag id where you want to render your component
+                target: '#app',
 
                 // enter your initial data
                 data : {
@@ -74,7 +90,7 @@
                         
                         // you can access the rest of the model in here!
                         // the `this` variable will give you a locally scoped copy of the model
-                        console.log('I\'m calling you from *inside* the function', this.age);
+                        // console.log('I\'m calling you from *inside* the function', this.age);
 
                         // remember, you only have a local copy of the model
                         // you can alter it, but it will not have an affect outside of this function
@@ -96,20 +112,21 @@
                     vm.actor = false;
                     
                     // asynchronous binding updates allowed!
-                    get(
-                        'https://jsonplaceholder.typicode.com/comments/1',
-                        function(error, body) {
-                            
+                    getResource('https://jsonplaceholder.typicode.com/comments/1')
+                        .then(function(body) {
+
                             // notice that email wasn't originally a property of the data object
-                            if (body) vm.email = body.email;
-                        }
-                    );
+                            vm.email = body.email;
+                        });
                 }
             }
         );
 
+        compare(person.data.name, person.__data__.name);
+
         // you don't need to be inside your component object to update the data. let's change an existing value
         person.data.name='Micheal';
+        compare(person.data.name, person.__data__.name);
 
         // go ahead, overwrite the whole data object
         person.data = {
@@ -120,6 +137,8 @@
             }
         };
 
+        compare(person.data.age, person.__data__.age);
+
         // let's add back some values we wiped away
         person.data.address = {country: 'Colombia'};
         person.data.address.country = 'Mexico';
@@ -127,7 +146,7 @@
 
         // and one more brand new variable
         person.data.gender = 'female';
-        
+        compare(person.data.gender, person.__data__.gender);
 
         // it's pretty fast!
         console.timeEnd('Timer');

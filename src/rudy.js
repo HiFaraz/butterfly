@@ -1,137 +1,252 @@
 'use strict';
 
-var moduleTarget = (typeof global === 'undefined') ? window : global;
+function rudy(component) {
 
-moduleTarget.rudy = function (id, component) {
-    component.template = component.template || document.getElementById(id).innerHTML;
+  validate(component);
+  mapBindings(component).then(applyBindingSets);
+  component.template = component.template || document.querySelector(component.target).innerHTML; // temp
+  createProxyData(component);
 
-    var __original_data__ = Object.assign({}, component.data);
-    var __proxy__ = null;
-
-    Object.defineProperty(component, 'data', {
-        get: function () {
-            return __proxy__;
-        },
-        set: function (value) {
-            console.log('SET DATA', value);
-            var __new_data__ = Object.assign({}, value);
-            __proxy__ = proxyfull(__new_data__, viewRefresher(id, this));
-            if (typeof this.create === 'function') {
-                this.__create__ = this.create;
-                this.create.call(this.data);
-                delete this.create;
-            }
-            viewRefresher(id, this)();
-        },
-    });
-
-    component.data = __original_data__;
-
-    return component;
+  return component;
 }
 
-function viewRefresher(id, component) {
-    return function refreshView() {
-        if (Object.getOwnPropertyNames(component.data).length > 0 && component.template !== '') {
+function applyBindingSets(component) {
+  var patch = createPatcher(component);
+  Object.keys(component.__bindings__).forEach(function (path) {
+    var value = getProperty(component.__data__, path);
+    if (value) patch(null, null, value, null, path);
+  });
+}
 
-            var cache = {};
+function buildDOM(component) {
 
-            substituteValues(
-                component.template,
-                component.data,
-                function (error, result, cachedValues) {
-                    if (result) {
-                        document.getElementById(id).innerHTML = result;
-                        cache = cachedValues;
-                    }
-                }
-            );
+  var template =
+    (function (component) {
+      if (component.templateURL) return getTemplateFromURL(component.templateURL);
+      else if (component.template) return Promise.resolve(component.template);
+      else return Promise.reject();
+    })(component);
 
-            findAllInputElements(document.getElementById(id))
-                .forEach(function (inputElement) {
-                    var value = cache[inputElement.getAttribute('name')] || getProperty(component.data, inputElement.getAttribute('name'));
-                    if (typeof value !== 'undefined') {
-                        if (typeof value === 'function') value = value.call(Object.assign({}, component.data));
-                        if (inputElement.getAttribute('type') === 'checkbox') inputElement.checked = value;
-                        else inputElement.value = value;
-                    }
-                });
-        }
-        return true;
+  return template
+    .then(stringToDOMNodes)
+    .catch(function (error) {
+      return document.querySelector(component.target).childNodes;
+    });
+
+}
+
+function createPatcher(component) {
+  return function patch(target, property, value, receiver, path) {
+    if (typeof value === 'function') value = value.call(Object.assign({}, component.__data__));
+    console.log('SET', path, value);
+    if (component.__bindings__[path]) component.__bindings__[path].forEach(function (binder) {
+      binder(value);
+    });
+    return true;
+  };
+}
+
+function createProxyData(component) {
+  component.__data__ = Object.assign({}, component.data);
+  var __proxy__ = null;
+
+  Object.defineProperty(component, 'data', {
+    get: function () {
+      return __proxy__;
+    },
+    set: function (value) {
+      console.log('SET DATA', value);
+      component.__data__ = Object.assign({}, value);
+      __proxy__ = new proxyfull(component.__data__, {
+        set: createPatcher(this)
+      });
+      if (typeof this.create === 'function') {
+        this.__create__ = this.create;
+        this.create.call(this.data);
+        delete this.create;
+      }
+      applyBindingSets(this);
+    },
+  });
+
+  component.data = component.__data__;
+
+  return component;
+}
+
+function insertItemBetweenEachElementOfArray(targetArray, item) {
+  var result = [];
+  targetArray.forEach(function (element) {
+    result.push(element, item);
+  })
+  result.pop();
+  return result;
+}
+
+function flattenNodeList(nodes) {
+  var flatNodeList = [];
+  nodes.forEach(function (node) {
+    traverseDOM(node, function (node) {
+      flatNodeList.push(node);
+    })
+  });
+  return flatNodeList;
+}
+
+function flattenDOM2(node, level = 0) {
+  var result = [];
+
+  console.log(level, node, result);
+  return result;
+}
+
+function getTemplateFromURL(url, callback) {
+  return new Promise(function (resolve, reject) {
+
+    var request = new XMLHttpRequest();
+    request.open('GET', url, true);
+    request.onload = function () {
+      if (request.readyState != 4 || request.status != 200) reject();
+      else resolve(request.responseText);
     };
-}
-
-function substituteValues(initialHTML, data, callback) {
-    var atleastOneValidMatchFound = false;
-    var html = initialHTML;
-    var matches = html.match(/{{(.+?)}}/g);
-    var cache = {};
-    if (matches) {
-        matches.forEach(function (match) {
-            var prop = match.replace(/[{}]/g, '').trim();
-            var value = getProperty(data, prop);
-            if (typeof value !== 'undefined') {
-                if (typeof value === 'function') cache[prop] = value = value.call(Object.assign({}, data));
-                atleastOneValidMatchFound = true;
-                html = html.replace(match, value);
-            }
-        });
+    try {
+      request.send();
+    } catch (error) {
+      reject(error);
     }
-    if (atleastOneValidMatchFound && callback) callback(null, html, cache);
-    else if (callback) callback(true);
+
+  });
 }
 
-function getProperty(source, property) {
-    if (source && property) return property
-        .split('.')
-        .reduce(function (initial, key) {
-            if (typeof initial === 'undefined') return undefined;
-            else return initial[key];
-        }, source);
-    else return undefined;
+function getProperty(source, path) {
+  if (source && path) return path
+    .split('.')
+    .reduce(function (initial, key) {
+      if (typeof initial === 'undefined') return undefined;
+      else return initial[key];
+    }, source);
+  else return undefined;
 }
 
-function findAllInputElements(rootElement) {
-    var inputs = [];
-    var elementsToCheck = rootElement.childNodes;
-    var elementsRemaining;
-    do {
-        elementsRemaining = [];
-        [].forEach.call(elementsToCheck, function (node) {
-            if (['INPUT', 'RANGE', 'SELECT', 'TEXTAREA'].indexOf(node.tagName) > -1) inputs.push(node);
-            else if (node.childNodes.length > 0) elementsRemaining.push.apply(elementsRemaining, node.childNodes);
-        })
-        elementsToCheck = elementsRemaining;
-    }
-    while (elementsToCheck.length > 0)
-    return inputs;
-}
+function mapBindings(component) {
 
-function proxyfull(original, setter, stack) {
-    if (typeof stack === 'undefined') stack = '';
-    var newOriginal = Object.assign({}, original);
+  component.__bindings__ = {};
 
-    Object.keys(newOriginal).forEach(function (key) {
-        if (typeof newOriginal[key] === "object") {
-            newOriginal[key] = proxyfull(newOriginal[key], setter, stack + '/' + key);
-        }
+  return buildDOM(component)
+    .then(flattenNodeList)
+    .then(splitTextNodesByTemplates)
+    .then(function (nodes) {
+      nodes.forEach(buildBinding);
+      return component;
     });
 
-    return new Proxy(
-        newOriginal, {
-            get: function (target, property) {
-                return target[property];
-            },
-            set: function (target, property, value, receiver) {
-                console.log('SET', stack + '/' + property, value)
+  function buildBinding(node) {
+    var typeTable = {};
 
-                if (typeof value === 'object') target[property] = proxyfull(value, setter, stack + '/' + property);
-                else {
-                    target[property] = value;
-                    original[property] = value;
-                }
-                return setter(value, stack + '/' + property);
-            }
+    typeTable['INPUT'] = function (node) {
+      if (node.getAttribute('name')) {
+        touchBinding(component, node.getAttribute('name'));
+        var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
+        component.__bindings__[node.getAttribute('name')].push(function (value) {
+          node[attr] = value
+        });
+      }
+    };
+
+    ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function (type) {
+      typeTable[type] = function (node) {
+        if (node.getAttribute('name')) {
+          touchBinding(component, node.getAttribute('name'));
+          component.__bindings__[node.getAttribute('name')].push(function (value) {
+            node.value = value
+          });
         }
-    );
+      };
+    });
+
+    typeTable['#text'] = function (node) {
+      var matches = node.textContent.match(/{{(.+?)}}/g);
+      if (matches) {
+        var path = matches[0].replace(/[{}]/g, '').trim();
+        touchBinding(component, path);
+        component.__bindings__[path].push(function (value) {
+          node.nodeValue = value;
+        });
+      }
+    };
+
+    if (typeof node.nodeName !== 'undefined' && typeTable[node.nodeName]) typeTable[node.nodeName](node);
+  }
+}
+
+function splitTextNodesByTemplates(nodes) {
+  var result = [];
+  nodes.forEach(process);
+
+  function process(node) {
+    var arr;
+    if (node.nodeName === '#text') result = result.concat(processTextNode(node));
+    else result.push(node);
+  }
+
+  function processTextNode(node) {
+    var matches = node.textContent.match(/{{(.+?)}}/g);
+    if (matches) {
+      return processTextNodeMatches(node, matches);
+    } else return node;
+  }
+
+  function processTextNodeMatches(node, matches) {
+    var result = splitTextContentByMatches(node.textContent, matches).map(function (textContent) {
+      var element = document.createTextNode(textContent);
+      node.parentNode.insertBefore(element, node);
+      return element
+    });
+    node.parentNode.removeChild(node);
+    return result;
+  }
+
+  function splitTextContentByMatches(textContent, matches) {
+    var result = [textContent];
+
+    matches.forEach(function (match) {
+      result = splitTextContentListByMatch(result, match);
+    });
+
+    return result;
+  }
+
+  function splitTextContentListByMatch(textContents, match) {
+    var result = [];
+    textContents.forEach(function (textContent, index) {
+      if (textContent.indexOf(match) > -1) {
+        result.push.apply(result, insertItemBetweenEachElementOfArray(textContent.split(match), match));
+      } else result.push(textContent);
+    });
+    return result;
+  }
+
+  return result;
+}
+
+function stringToDOMNodes(str) {
+  return (new DOMParser()).parseFromString(str, 'text/html').body.childNodes;
+}
+
+function touchBinding(component, path) {
+  component.__bindings__[path] = component.__bindings__[path] || [];
+}
+
+function traverseDOM(node, callback) { // credit: http://www.javascriptcookbook.com/article/Traversing-DOM-subtrees-with-a-recursive-walk-the-DOM-function/
+  callback(node);
+  node = node.firstChild;
+  while (node) {
+    traverseDOM(node, callback);
+    node = node.nextSibling;
+  }
+}
+
+function validate(component) {
+  if (!component.target || !document.querySelector(component.target)) throw TypeError('Components must have a valid target');
+  if (typeof component.data != 'object') throw TypeError('Components must have a valid target');
 }

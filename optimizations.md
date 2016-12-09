@@ -1,11 +1,11 @@
 virtual dom
 
-DONE don't do anything if the data field is empty
-
-don't pass around the stack in createDeepProxy
-
 DONE recursively define proxies - this can catch new properties that were not get/set before
 
 debounce/throttle changes
 
 if I don't have a match on a select, I should select a blank
+
+doubleage doesn't update anymore!
+
+don't pollute the namespace!
