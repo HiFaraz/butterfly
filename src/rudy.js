@@ -153,13 +153,14 @@
     function buildBinding(node) {
       var typeTable = {};
 
-      typeTable['INPUT'] = function (node) {
+      typeTable.INPUT = function (node) {
         if (node.getAttribute('name')) {
           touchBinding(component, node.getAttribute('name'));
           var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
           addBinder(component, node.getAttribute('name'), function (value) {
             node[attr] = value;
           });
+          setEventListenersOnFormElements(node, attr);
         }
       };
 
@@ -170,6 +171,7 @@
             addBinder(component, node.getAttribute('name'), function (value) {
               node.value = value;
             });
+            setEventListenersOnFormElements(node);
           }
         };
       });
@@ -185,6 +187,23 @@
         }
       };
 
+      function setEventListenersOnFormElements(node, attribute = 'value') {
+        var events = ['onchange', 'onclick', 'onkeypress', 'oninput'];
+        var watcher = getProperty(component.watchers, node.getAttribute('name'));
+        if (component.watchers === true || watcher === true || (typeof watcher !== 'function' && node.hasAttribute('watched'))) setEventListenersOnElement(node, function () {
+          set(component.data, node.getAttribute('name'), node[attribute]);
+        }, ...events);
+        else if (typeof watcher === 'function') setEventListenersOnElement(node, function () {
+          set(component.data, node.getAttribute('name'), watcher(node[attribute], node));
+        }, ...events);
+
+        function setEventListenersOnElement(node, handler, ...events) {
+          events.forEach(function (e) {
+            node[e] = handler;
+          });
+        }
+      }
+
       if (typeof node.nodeName !== 'undefined' && typeTable[node.nodeName]) typeTable[node.nodeName](node);
     }
 
@@ -194,11 +213,15 @@
     }
 
     function publishDOM(component) {
-      if (document.querySelector(component.target).innerHTML.trim() === '') dom.forEach(function (node) {
-        document.querySelector(component.target).appendChild(node);
-      });
-
+      var target = document.querySelector(component.target);
+      if (target.innerHTML.trim() === '') {
+        do {
+          target.appendChild(dom[0]);
+        } while (dom[0])
+      }
     }
+
+
   }
 
   function pipe(...funcs) {
@@ -209,6 +232,20 @@
       }, args);
     };
   }
+
+  function set(source, path, value) { // credit: http://stackoverflow.com/posts/18937118/revisions
+    var schema = source; // a moving reference to internal objects within source
+    var properties = path.split('.');
+    var len = properties.length;
+    for (var i = 0; i < len - 1; i++) {
+      var element = properties[i];
+      if (!schema[element]) schema[element] = {}
+      schema = schema[element];
+    }
+
+    schema[properties[len - 1]] = value;
+  }
+
 
   function splitTextNodesByTemplates(nodes) {
     var result = [];

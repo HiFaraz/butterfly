@@ -53,6 +53,26 @@
                     }
                 },
 
+                // create some watchers! get notified by input events
+                // to enable two-way binding on all variables, set `watchers: true`
+                // instead of passing it an object
+                watchers: {
+
+                    // setting to `true` tells Rudy to enable two-way data-binding on all form elements
+                    actor: true,
+                    address: {
+                        country: true
+                    },
+                    age: true,
+
+                    // or we can choose exactly how to respond to an input event
+                    email: function(value, element) {
+                        
+                        // another way to enable two-way data binding is to return the value 
+                        return value;
+                    }
+                },
+
                 // this function is called once before the first render
                 create: function() {
                     var vm = this;
@@ -71,16 +91,21 @@
                 },
                 template:
                     `
-                    <input type="text"><br>
-                    <input type="text" name="name"><br>
-                    <input type="range" name="age"><br>
-                    <input type="text" name="doubleAge"><br>
-                    <input type="checkbox" name="actor"><br>
+                    <input type="text"> not linked to any component data at all<br>
+                    `
+                    +
+
+                    // you can also two-way data binding on a single form element ONLY by adding a `watched` attribute
+                    `
+                    <input type="text" name="name" watched> watched by attribute<br>
+                    <input type="range" name="age"> watched by setting watcher to true<br>
+                    <input type="text" name="doubleAge"> not watched, no two-way data binding<br>
+                    <input type="checkbox" name="actor"> watched by setting watcher to true<br>
                     <div>
-                        <textarea name="address.country"></textarea>
+                        <textarea name="address.country"></textarea>watched by setting watcher to true
                     </div>
-                    <input type="text" name="email"><br>
-                    <select name="gender">
+                    <input type="text" name="email"> watched by watcher function<br>
+                    <select name="gender" watched> watched by attribute
                         <option value="male">Male</option>
                         <option value="female">Female</option>
                     </select>
@@ -91,6 +116,7 @@
                     <p> {{ address.country }} </p>
                     <p> {{ email }} </p>
                     <p> {{ gender }} </p>
+                    <p> {{ actor }} </p>
                     `
             }
         );
