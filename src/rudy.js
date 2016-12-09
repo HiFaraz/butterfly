@@ -61,7 +61,7 @@
         if (component.__livePaths__) component.__livePaths__.forEach(function (livePath) {
 
           // run watchers
-          var liveValue = getProperty(component.__data__, livePath).bind(Object.assign({}, component.__data__));
+          var liveValue = (getProperty(component.__data__, livePath) || function () {}).bind(Object.assign({}, component.__data__));
           var liveWatcher = getProperty(component.watchers, livePath);
           if (typeof liveWatcher === 'function') liveValue = liveWatcher(liveValue, null) || liveValue;
 
