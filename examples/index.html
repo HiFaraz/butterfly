@@ -4,8 +4,11 @@
 </head>
 
 <body>
+    <div id="preview">
+    </div>
     <div id="app">
     </div>
+    <script src="https://unpkg.com/marked@0.3.6"></script>
     <script src="../../proxyfull/src/proxyfull.js"></script>
     <script src="../src/rudy.js"></script>
     <script>
@@ -53,16 +56,26 @@
                     }
                 },
 
-                // create some watchers! get notified by input events
+                // create some watchers! get notified by input events and model updates
                 // to enable two-way binding on all variables, set `watchers: true`
                 // instead of passing it an object
                 watchers: {
 
                     // setting to `true` tells Rudy to enable two-way data-binding on all form elements
                     actor: true,
+
+                    // this function does not return anything to the form element. Instead it does another
+                    // operation entirely. It reflects a Markdown preview in another <div> tag
                     address: {
-                        country: true
+                        country: function(value, element) {
+                            document.getElementById('preview').innerHTML = marked(value, { sanitize: true });
+
+                            // instead of omitting the return statement, you can also explicitly return a falsy value
+                            // for example: `return false;` or `return null;` - these will not cause the form element
+                            // to update
+                        }
                     },
+
                     age: true,
 
                     // or we can choose exactly how to respond to an input event
@@ -135,7 +148,7 @@
 
         // let's add back some values we wiped away
         person.data.address = {country: 'Colombia'};
-        person.data.address.country = 'Mexico';
+        person.data.address.country = '# Mexico\n* A land of wonder';
         person.data.actor = true;
 
         // and one more brand new variable

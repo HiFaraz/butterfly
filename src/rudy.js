@@ -61,11 +61,14 @@
       set: function (value) {
         component.__data__ = Object.assign({}, value);
         __proxy__ = new proxyfull(component.__data__, {
-          set: function () {
+          set: function (target, property, value, receiver, path) {
 
             if (component.__livePaths__) component.__livePaths__.forEach(function (path) {
               syncPathToView(component, path, createPatcher(component));
             });
+
+            var watcher = getProperty(component.watchers, path);
+            if (typeof watcher === 'function') watcher(value, null);
 
             return createPatcher(component).apply({}, arguments);
           }
@@ -188,14 +191,17 @@
       };
 
       function setEventListenersOnFormElements(node, attribute = 'value') {
-        var events = ['onchange', 'onclick', 'onkeypress', 'oninput'];
+        var events = ['onclick', 'onchange', 'onkeypress', 'oninput'];
         var watcher = getProperty(component.watchers, node.getAttribute('name'));
         if (component.watchers === true || watcher === true || (typeof watcher !== 'function' && node.hasAttribute('watched'))) setEventListenersOnElement(node, function () {
           set(component.data, node.getAttribute('name'), node[attribute]);
         }, ...events);
-        else if (typeof watcher === 'function') setEventListenersOnElement(node, function () {
-          set(component.data, node.getAttribute('name'), watcher(node[attribute], node));
-        }, ...events);
+        else if (typeof watcher === 'function') {
+          setEventListenersOnElement(node, function () {
+            var value = watcher(node[attribute], node);
+            if (value) set(component.data, node.getAttribute('name'), value);
+          }, ...events);
+        }
 
         function setEventListenersOnElement(node, handler, ...events) {
           events.forEach(function (e) {
