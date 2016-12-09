@@ -1,6 +1,12 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Rudy | Fast, simple, flexible front-end components</title>
     <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w="
         crossorigin="anonymous" />-->
     <link rel="stylesheet" href="https://bootswatch.com/cosmo/bootstrap.min.css" crossorigin="anonymous" />
@@ -8,21 +14,36 @@
 </head>
 
 <body>
-    <div class="container">
+    <div id="top" class="container">
+        <nav class="navbar navbar-default" role="navigation">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-2"
+                        aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="#">Rudy</a>
+                </div>
+                <div class="navbar-collapse collapse" id="bs-example-navbar-collapse-2" aria-expanded="false" style="height: 0.8px;">
+                    <ul class="nav navbar-nav">
+                        <li><a href="#get-started">Get started</a></li>
+                        <li><a href="#simple-and-flexible">Simple and flexible</a></li>
+                        <li><a href="#demo">Demo</a></li>
+                        <li><a href="#demo-source-code">Demo source code</a></li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li><a href="https://github.com/HiFaraz/rudy">GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
         <div class="jumbotron" style="margin-top: 2rem;">
             <h1>Render your view in under 11ms* for 2.2kb</h1>
             <p>Make simple, flexible, re-usable, social front-end components with Rudy</p>
             <small>* average render time</small>
-        </div>
-        <div class="row">
-            <div class="col-lg-12">
-                <strong>Define your template:</strong>
-                <pre>&lt;div id="app"&gt; {{ firstName }} &lt;input type="text" name="firstName"&gt; &lt;/div&gt;</pre>
-                <strong>Define your component:</strong>
-                <pre>var person = rudy( { target: '#app', data: { firstName: 'Micheal'} } );</pre>
-                <strong>Mix things up:</strong>
-                <pre>person.data.firstName = 'George';</pre>
-            </div>
         </div>
         <div class="row">
             <div class="col-lg-12">
@@ -33,7 +54,27 @@
         </div>
         <div class="row">
             <div class="col-md-8" style="border-right: 1px solid #ccc">
-                <h2>Simple and flexible</h2>
+                <h2 id="get-started">Get started in 10 seconds</h2>
+                <strong>Define your template:</strong>
+                <pre>&lt;div id="app"&gt; {{ firstName }} &lt;input type="text" name="firstName"&gt; &lt;/div&gt;</pre>
+                <strong>Define your component:</strong>
+                <pre>var person = rudy( { target: '#app', data: { firstName: 'Micheal'} } );</pre>
+                <strong>Mix things up:</strong>
+                <pre>person.data.firstName = 'George';</pre>
+                <p><small><a href="#top">(back to top)</a></small></p>
+            </div>
+            <div class="col-md-4">
+                <h2>Status</h2>
+                <p>Rudy is in pre-release state. It weighs ~ 2.2kb minified and gzipped.</p>
+                <p>Rudy relies on ECMAScript 2015 Proxy objects. A limited functionality polyfill is available <a href="https://github.com/GoogleChrome/proxy-polyfill">here</a>.</p>
+                <p>There is a fully working demo below, and the demo source code is included in the bottom of the document.</p>
+                <p>The views below are dynamically generated. The view internals are not in the source HTML document.</p>
+                <p>Released under the MIT licence by <a href="https://github.com/HiFaraz">Faraz Syed</a>.</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <h2 id="simple-and-flexible">Simple and flexible</h2>
                 <p>Rudy began with a question: can you balance simplicity <em>and</em> flexibility in front-end components?
                     I made up a list of wants and to-avoids:</p>
                 <table class="table table-striped">
@@ -133,20 +174,13 @@
                         </tr>
                     </tbody>
                 </table>
-            </div>
-            <div class="col-md-4">
-                <h2>Status</h2>
-                <p>Rudy is in pre-release state. It weighs under 2.2kb minified and gzipped.</p>
-                <p>Rudy relies on ECMAScript 2015 Proxy objects. A limited functionality polyfill is available <a href="https://github.com/GoogleChrome/proxy-polyfill">here</a>.</p>
-                <p>There is a fully working demo below, and the demo source code is included in the bottom of the document.</p>
-                <p>The views below are dynamically generated. The view internals are not in the source HTML document.</p>
-                <p>Released under the MIT licence by Faraz Syed.</p>
+                <p><small><a href="#top">(back to top)</a></small></p>
             </div>
         </div>
         <div class="row">
             <div class="col-lg-12">
                 <div class="page-header">
-                    <h1 id="typography">Demo</h1>
+                    <h1 id="demo">Demo</h1>
                 </div>
             </div>
         </div>
@@ -169,16 +203,18 @@
                 </div>
             </div>
         </div>
+        <p><small><a href="#top">(back to top)</a></small></p>
         <div class="row">
             <div class="col-lg-12">
                 <div class="page-header">
-                    <h1 id="typography">Source code for demo</h1>
+                    <h1 id="demo-source-code">Source code for demo</h1>
                 </div>
             </div>
         </div>
         <div class="row">
             <div class="col-lg-12">
                 <div id="codeView"></div>
+                <p><small><a href="#top">(back to top)</a></small></p>
             </div>
         </div>
     </div>
@@ -431,6 +467,11 @@ function getResource(url, callback) {
 document.getElementById('codeView').innerHTML = marked('```javascript\n'+document.getElementById('code').innerHTML+'\n```').trim();
 
     </script>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
 </body>
 
 </html>
