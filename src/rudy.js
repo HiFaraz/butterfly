@@ -187,6 +187,7 @@
           addBinder(component, path, function (value) {
             node.nodeValue = value;
           });
+          node.textContent = '';
         }
       };
 
