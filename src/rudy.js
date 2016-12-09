@@ -3,19 +3,16 @@
 function rudy(component) {
 
   validate(component);
-  mapBindings(component).then(applyBindingSets);
-  component.template = component.template || document.querySelector(component.target).innerHTML; // temp
+  mapBindings(component).then(syncAllPathsToView);
   createProxyData(component);
-
+  component.__livePaths__ = [];
   return component;
 }
 
-function applyBindingSets(component) {
-  var patch = createPatcher(component);
-  Object.keys(component.__bindings__).forEach(function (path) {
-    var value = getProperty(component.__data__, path);
-    if (value) patch(null, null, value, null, path);
-  });
+function addBinder(component, path, binder) {
+  var value = getProperty(component.__data__, path);
+  if (typeof value === 'function' && component.__livePaths__.indexOf(path) === -1) component.__livePaths__.push(path);
+  component.__bindings__[path].push(binder);
 }
 
 function buildDOM(component) {
@@ -58,14 +55,21 @@ function createProxyData(component) {
       console.log('SET DATA', value);
       component.__data__ = Object.assign({}, value);
       __proxy__ = new proxyfull(component.__data__, {
-        set: createPatcher(this)
+        set: function () {
+
+          if (component.__livePaths__) component.__livePaths__.forEach(function (path) {
+            syncPathToView(component, path, createPatcher(component));
+          });
+
+          return createPatcher(component).apply({}, arguments);
+        }
       });
       if (typeof this.create === 'function') {
         this.__create__ = this.create;
         this.create.call(this.data);
         delete this.create;
       }
-      applyBindingSets(this);
+      syncAllPathsToView(this);
     },
   });
 
@@ -91,13 +95,6 @@ function flattenNodeList(nodes) {
     })
   });
   return flatNodeList;
-}
-
-function flattenDOM2(node, level = 0) {
-  var result = [];
-
-  console.log(level, node, result);
-  return result;
 }
 
 function getTemplateFromURL(url, callback) {
@@ -147,8 +144,8 @@ function mapBindings(component) {
       if (node.getAttribute('name')) {
         touchBinding(component, node.getAttribute('name'));
         var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
-        component.__bindings__[node.getAttribute('name')].push(function (value) {
-          node[attr] = value
+        addBinder(component, node.getAttribute('name'), function (value) {
+          node[attr] = value;
         });
       }
     };
@@ -157,8 +154,8 @@ function mapBindings(component) {
       typeTable[type] = function (node) {
         if (node.getAttribute('name')) {
           touchBinding(component, node.getAttribute('name'));
-          component.__bindings__[node.getAttribute('name')].push(function (value) {
-            node.value = value
+          addBinder(component, node.getAttribute('name'), function (value) {
+            node.value = value;
           });
         }
       };
@@ -169,7 +166,7 @@ function mapBindings(component) {
       if (matches) {
         var path = matches[0].replace(/[{}]/g, '').trim();
         touchBinding(component, path);
-        component.__bindings__[path].push(function (value) {
+        addBinder(component, path, function (value) {
           node.nodeValue = value;
         });
       }
@@ -231,6 +228,19 @@ function splitTextNodesByTemplates(nodes) {
 
 function stringToDOMNodes(str) {
   return (new DOMParser()).parseFromString(str, 'text/html').body.childNodes;
+}
+
+function syncAllPathsToView(component) {
+  var patch = createPatcher(component);
+  Object.keys(component.__bindings__).forEach(function (path) {
+    syncPathToView(component, path, patch);
+  });
+}
+
+function syncPathToView(component, path, patch) {
+  if (typeof patch === 'undefined') patch = createPatcher(component);
+  var value = getProperty(component.__data__, path);
+  if (value) patch(null, null, value, null, path);
 }
 
 function touchBinding(component, path) {
