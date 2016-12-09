@@ -5,26 +5,6 @@
 
 <body>
     <div id="app">
-        <input type="text"><br>
-        <input type="text" name="name"><br>
-        <input type="range" name="age"><br>
-        <input type="text" name="doubleAge"><br>
-        <input type="checkbox" name="actor"><br>
-        <div>
-            <textarea name="address.country"></textarea>
-        </div>
-        <input type="text" name="email"><br>
-        <select name="gender">
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-        </select>
-        <p> {{ name }} </p>
-        <p> {{ age }} </p>
-        <p> {{ age }} {{ gender }} </p>
-        <p> {{ doubleAge }} </p>
-        <p> {{ address.country }} </p>
-        <p> {{ email }} </p>
-        <p> {{ gender }} </p>
     </div>
     <script src="../../proxyfull/src/proxyfull.js"></script>
     <script src="../src/rudy.js"></script>
@@ -32,37 +12,8 @@
 
         'use strict';
 
-        // let's start timing, just for fun
-        console.time('Timer');
-
-        // this is a utility function to make an AJAX request. it's not part of Rudy. we'll use it down below to bind the view to a server response
-        function getResource(url, callback) {
-
-            return new Promise(function(resolve,reject) {
-
-                var request = new XMLHttpRequest();
-                request.open('GET', url, true);
-                request.onload = function () {
-                    if (request.readyState != 4 || request.status != 200) reject();
-                    else resolve(JSON.parse(request.responseText));
-                }; 
-                try {
-                    request.send();
-                }
-                catch (error) {
-                    reject(error);
-                }
-
-            });
-
-        }
-
-        // another utility function - to show you that proxyfull keeps data parity
-        function compare(a,b) {
-            console.log('COMPARE', a==b, a, b);
-        }
-
-        // hang on to the returned object! you can do stuff with it later
+        // let's go! all you have to do is send an object to rudy.
+        // hang on to the returned object btw, you can do stuff with it later
         var person = rudy(
 
             // the component behaviour is fed as object properties
@@ -104,29 +55,48 @@
 
                 // this function is called once before the first render
                 create: function() {
-                    console.log('CREATE PERSON', this)
                     var vm = this;
 
                     vm.name = 'James';
                     vm.age = 25;
                     vm.actor = false;
                     
-                    // asynchronous binding updates allowed!
+                    // asynchronous binding updates allowed! we define this function way down below
                     getResource('https://jsonplaceholder.typicode.com/comments/1')
                         .then(function(body) {
 
                             // notice that email wasn't originally a property of the data object
                             vm.email = body.email;
                         });
-                }
+                },
+                template:
+                    `
+                    <input type="text"><br>
+                    <input type="text" name="name"><br>
+                    <input type="range" name="age"><br>
+                    <input type="text" name="doubleAge"><br>
+                    <input type="checkbox" name="actor"><br>
+                    <div>
+                        <textarea name="address.country"></textarea>
+                    </div>
+                    <input type="text" name="email"><br>
+                    <select name="gender">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
+                    <p> {{ name }} </p>
+                    <p> {{ age }} </p>
+                    <p> {{ age }} {{ gender }} </p>
+                    <p> {{ doubleAge }} </p>
+                    <p> {{ address.country }} </p>
+                    <p> {{ email }} </p>
+                    <p> {{ gender }} </p>
+                    `
             }
         );
 
-        compare(person.data.name, person.__data__.name);
-
         // you don't need to be inside your component object to update the data. let's change an existing value
         person.data.name = 'Micheal';
-        compare(person.data.name, person.__data__.name);
 
         // go ahead, overwrite the whole data object
         person.data = {
@@ -137,8 +107,6 @@
             }
         };
 
-        compare(person.data.age, person.__data__.age);
-
         // let's add back some values we wiped away
         person.data.address = {country: 'Colombia'};
         person.data.address.country = 'Mexico';
@@ -146,10 +114,28 @@
 
         // and one more brand new variable
         person.data.gender = 'female';
-        compare(person.data.gender, person.__data__.gender);
 
-        // it's pretty fast!
-        console.timeEnd('Timer');
+        // this is a utility function to make an AJAX request. it's not part of Rudy. we'll use it down below to bind the view to a server response
+        function getResource(url, callback) {
+
+            return new Promise(function(resolve,reject) {
+
+                var request = new XMLHttpRequest();
+                request.open('GET', url, true);
+                request.onload = function () {
+                    if (request.readyState != 4 || request.status != 200) reject();
+                    else resolve(JSON.parse(request.responseText));
+                }; 
+                try {
+                    request.send();
+                }
+                catch (error) {
+                    reject(error);
+                }
+
+            });
+
+        }
         
     </script>
 </body>
