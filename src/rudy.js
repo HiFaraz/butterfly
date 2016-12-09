@@ -20,14 +20,14 @@
   function rudy(component) {
 
     validate(component);
+    component.__livePaths__ = [];
     mapBindings(component);
     createProxyData(component);
-    component.__livePaths__ = [];
     return component;
   }
 
   function addBinder(component, path, binder) {
-    var value = getProperty(component.__data__, path);
+    var value = getProperty(component.data, path);
     if (typeof value === 'function' && component.__livePaths__.indexOf(path) === -1) component.__livePaths__.push(path);
     component.__bindings__[path].push(binder);
   }
