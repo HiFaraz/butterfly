@@ -42,10 +42,38 @@
 
   function createPatcher(component) {
     return function patch(target, property, value, receiver, path) {
+
+      // run watchers
+      var watcher = getProperty(component.watchers, path);
+      if (typeof watcher === 'function') value = watcher(value, null) || value;
+
+      // get live value
       if (typeof value === 'function') value = value.call(Object.assign({}, component.__data__));
-      if (component.__bindings__[path]) component.__bindings__[path].forEach(function (binder) {
-        binder(value);
-      });
+
+      if (component.__bindings__[path]) {
+
+        // apply bindings
+        component.__bindings__[path].forEach(function (binder) {
+          binder(value);
+        });
+
+        // update live values
+        if (component.__livePaths__) component.__livePaths__.forEach(function (livePath) {
+
+          // run watchers
+          var liveValue = getProperty(component.__data__, livePath).bind(Object.assign({}, component.__data__));
+          var liveWatcher = getProperty(component.watchers, livePath);
+          if (typeof liveWatcher === 'function') liveValue = liveWatcher(liveValue, null) || liveValue;
+
+          // get live value if still a function
+          if (typeof liveValue === 'function') liveValue = liveValue.call(Object.assign({}, component.__data__));
+
+          // apply bindings
+          component.__bindings__[livePath].forEach(function (binder) {
+            binder(liveValue);
+          });
+        });
+      }
       return true;
     };
   }
@@ -62,14 +90,6 @@
         component.__data__ = Object.assign({}, value);
         __proxy__ = new proxyfull(component.__data__, {
           set: function (target, property, value, receiver, path) {
-
-            if (component.__livePaths__) component.__livePaths__.forEach(function (path) {
-              syncPathToView(component, path, createPatcher(component));
-            });
-
-            var watcher = getProperty(component.watchers, path);
-            if (typeof watcher === 'function') watcher(value, null);
-
             return createPatcher(component).apply({}, arguments);
           }
         });
@@ -194,10 +214,10 @@
       function setEventListenersOnFormElements(node, attribute = 'value') {
         var events = ['onclick', 'onchange', 'onkeypress', 'oninput'];
         var watcher = getProperty(component.watchers, node.getAttribute('name'));
-        if (component.watchers === true || watcher === true || (typeof watcher !== 'function' && node.hasAttribute('watched'))) setEventListenersOnElement(node, function () {
+        if (node.hasAttribute('unwatched') === false && (component.watchers === true || watcher === true || (typeof watcher !== 'function' && node.hasAttribute('watched')))) setEventListenersOnElement(node, function () {
           set(component.data, node.getAttribute('name'), node[attribute]);
         }, ...events);
-        else if (typeof watcher === 'function') {
+        else if (node.hasAttribute('unwatched') === false && typeof watcher === 'function') {
           setEventListenersOnElement(node, function () {
             var value = watcher(node[attribute], node);
             if (value) set(component.data, node.getAttribute('name'), value);

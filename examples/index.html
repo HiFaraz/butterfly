@@ -73,16 +73,23 @@
                             // instead of omitting the return statement, you can also explicitly return a falsy value
                             // for example: `return false;` or `return null;` - these will not cause the form element
                             // to update
+                            
                         }
                     },
 
                     age: true,
 
-                    // or we can choose exactly how to respond to an input event
+                    // watcher functions run BEFORE any data calculations or bindings happen (interception)
+                    // you can use this to intercept asynchronous requests
                     email: function(value, element) {
                         
-                        // another way to enable two-way data binding is to return the value 
-                        return value;
+                        // whatever you return from here will be set in the model and view 
+                        return value.toLowerCase();
+                    },
+
+                    // let's force all name to be UPPERCASE 
+                    name: function(value, element) {
+                        return value.toUpperCase();
                     }
                 },
 
@@ -111,7 +118,7 @@
                     // you can also two-way data binding on a single form element ONLY by adding a `watched` attribute
                     `
                     <input type="text" name="name" watched> watched by attribute<br>
-                    <input type="range" name="age"> watched by setting watcher to true<br>
+                    <input type="range" name="age" unwatched> watched globally by setting watcher to true, but disabled on this input element by attribute<br>
                     <input type="text" name="doubleAge"> not watched, no two-way data binding<br>
                     <input type="checkbox" name="actor"> watched by setting watcher to true<br>
                     <div>
