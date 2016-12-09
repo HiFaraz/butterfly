@@ -1,3 +1,9 @@
+.navbar-default {
+    background-color: rgb(60, 115, 120);
+}
+
+.navbar-default .navbar-nav>li>a:hover,
+.navbar-default .navbar-nav>li>a:focus,
 .jumbotron {
     background-color: rgb(95, 158, 160);
     color: rgb(255, 255, 255);
