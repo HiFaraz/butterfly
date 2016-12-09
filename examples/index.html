@@ -4,10 +4,8 @@
 </head>
 
 <body>
-    <div id="preview">
-    </div>
-    <div id="app">
-    </div>
+    <div id="app"></div>
+    <div id="preview"></div>
     <script src="https://unpkg.com/marked@0.3.6"></script>
     <script src="../../proxyfull/src/proxyfull.js"></script>
     <script src="../src/rudy.js"></script>
@@ -40,7 +38,7 @@
                     // will not affect the view nor model
 
                     // you can calculate data on every model/view update!
-                    doubleAge: function() {
+                    ageFn: function() {
                         
                         // you can access the rest of the model in here!
                         // the `this` variable will give you a locally scoped copy of the model
@@ -111,33 +109,105 @@
                 },
                 template:
                     `
-                    <input type="text"> not linked to any component data at all<br>
+                    <table style="border: 1px solid black">
+                        <thead>
+                            <tr>
+                                <td>Description</td>
+                                <td>View(s)</td>
+                                <td>Comments</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Unlinked text input:</td>
+                                <td><input type="text"></td>
+                                <td>not linked to any component data at all</td>
+                            </tr>
                     `
+
                     +
 
-                    // you can also two-way data binding on a single form element ONLY by adding a `watched` attribute
+                    // you can enable two-way data binding on a single form element ONLY by adding a `watched` attribute
+                    // you can output the model value as text by using moustache/double-brace templates: e.g. {{ variable_name }}
                     `
-                    <input type="text" name="name" watched> watched by attribute<br>
-                    <input type="range" name="age" unwatched> watched globally by setting watcher to true, but disabled on this input element by attribute<br>
-                    <input type="text" name="doubleAge"> not watched, no two-way data binding<br>
-                    <input type="checkbox" name="actor"> watched by setting watcher to true<br>
-                    <div>
-                        <textarea name="address.country"></textarea>watched by setting watcher to true
-                    </div>
-                    <input type="text" name="email"> watched by watcher function<br>
-                    <select name="gender" watched> watched by attribute
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                    </select>
-                    <p> {{ name }} </p>
-                    <p> {{ age }} </p>
-                    <p> {{ age }} {{ gender }} </p>
-                    <p> {{ doubleAge }} </p>
-                    <p> {{ address.country }} </p>
-                    <p> {{ email }} </p>
-                    <p> {{ gender }} </p>
-                    <p> {{ actor }} </p>
+                            <tr>
+                                <td>Name:</td>
+                                <td>
+                                    <input type="text" name="name" watched><br>
+                                    {{ name }}
+                                </td>
+                                <td>watched by \`watched\` attribute</td>
+                            </tr>
+                            <tr>
+                                <td>Age:</td>
+                                <td>
+                                    <input type="range" name="age"><br>
+                                    {{ age }}
+                                </td>
+                                <td>watched by setting watcher to true</td>
+                            </tr>
+                            <tr>
+                                <td>Computed age:</td>
+                                <td>
+                                    <input type="text" name="ageFn"><br>
+                                    {{ ageFn }}
+                                </td>
+                                <td>not watched, no two-way data binding</td>
+                            </tr>
                     `
+
+                    +
+
+                    // you can disable two-way data binding on a single form element ONLY by adding a `unwatched` attribute,
+                    // in case you allowed it globally or even by the `watched` attribute
+                    `
+                            <tr>
+                                <td> Is actor: </td>
+                                <td>
+                                    <input type="checkbox" name="actor" unwatched><br>
+                                    {{ actor }}
+                                </td>
+                                <td> watched globally by setting watcher to true, but disabled on this input element by \`unwatched\` attribute </td>
+                            </tr>
+                            <tr>
+                                <td> Country description: </td>
+                                <td>
+                                    <textarea name="address.country"></textarea><br>
+                                    {{ address.country }}
+                                </td>
+                                <td> watched by setting watcher to true, also creates markdown preview in \`#preview\` </td>
+                            </tr>
+                            <tr>
+                                <td> Email: </td>
+                                <td>
+                                    <input type="text" name="email"><br>
+                                    {{  email  }}
+                                </td>
+                                <td> watched by watcher function </td>
+                            </tr>
+                            <tr>
+                                <td> Gender: </td>
+                                <td>
+                                    <select name="gender" watched>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                    </select><br>
+                                    {{ gender }}
+                                </td>
+                                <td> watched by \`watched\` attribute </td>
+                            </tr>
+                            <tr>
+                                <td> Age & Gender: </td>
+                                <td> {{ age }} | {{ gender }} </td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    `
+                
+                // you can also load a template from a file! the order of precedence is:
+                // templateURL > template > whatever is already in the target element
+                // templateURL: '/partials/app.html'
             }
         );
 
@@ -148,7 +218,7 @@
         person.data = {
             name: 'Maria',
             age: 55,
-            doubleAge: function() {
+            ageFn: function() {
                 return this.age / 2;
             }
         };
