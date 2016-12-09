@@ -89,9 +89,7 @@
       set: function (value) {
         component.__data__ = Object.assign({}, value);
         __proxy__ = new proxyfull(component.__data__, {
-          set: function (target, property, value, receiver, path) {
-            return createPatcher(component).apply({}, arguments);
-          }
+          set: createPatcher(component)
         });
         if (typeof this.create === 'function') {
           this.__create__ = this.create;
@@ -155,6 +153,7 @@
   }
 
   function mapBindings(component) {
+    console.time('Time to render first view');
     component.__bindings__ = {};
 
     var dom = buildDOM(component);
@@ -214,14 +213,16 @@
       function setEventListenersOnFormElements(node, attribute = 'value') {
         var events = ['onclick', 'onchange', 'onkeypress', 'oninput'];
         var watcher = getProperty(component.watchers, node.getAttribute('name'));
-        if (node.hasAttribute('unwatched') === false && (component.watchers === true || watcher === true || (typeof watcher !== 'function' && node.hasAttribute('watched')))) setEventListenersOnElement(node, function () {
-          set(component.data, node.getAttribute('name'), node[attribute]);
-        }, ...events);
-        else if (node.hasAttribute('unwatched') === false && typeof watcher === 'function') {
-          setEventListenersOnElement(node, function () {
-            var value = watcher(node[attribute], node);
-            if (value) set(component.data, node.getAttribute('name'), value);
+        if (node.hasAttribute('no-bind') === false) {
+          if (component.watchers === true || watcher === true || (typeof watcher !== 'function' && node.hasAttribute('bind'))) setEventListenersOnElement(node, function () {
+            set(component.data, node.getAttribute('name'), node[attribute]);
           }, ...events);
+          else if (typeof watcher === 'function') {
+            setEventListenersOnElement(node, function () {
+              var value = watcher(node[attribute], node);
+              if (value) set(component.data, node.getAttribute('name'), value);
+            }, ...events);
+          }
         }
 
         function setEventListenersOnElement(node, handler, ...events) {
@@ -246,6 +247,7 @@
           target.appendChild(dom[0]);
         } while (dom[0])
       }
+      console.timeEnd('Time to render first view');
     }
 
 
@@ -358,6 +360,50 @@
   function validate(component) {
     if (!component.target || !document.querySelector(component.target)) throw TypeError('Components must have a valid target');
     if (typeof component.data != 'object') throw TypeError('Components must have a valid target');
+  }
+
+  function proxyfull(original, handler, logger, basePath) {
+
+    if (typeof original !== 'object') throw TypeError('Cannot create proxy with a non-object as target');
+    if (typeof handler !== 'object') throw TypeError('Cannot create proxy with a non-object as handler');
+
+    if (typeof basePath === 'undefined') basePath = '';
+    var _target = Object.assign({}, original);
+
+    Object.keys(_target)
+      .forEach(function (key) {
+        if (typeof _target[key] === 'object' && !Array.isArray(_target[key])) {
+          _target[key] = proxyfull(_target[key], handler, logger, basePath + '.' + key);
+        }
+      });
+
+    const _handler = Object.assign({}, handler, {
+      set: function (target, property, value, receiver) {
+        if (logger) logger({
+          action: 'set',
+          target: target,
+          value: value,
+          receiver: receiver,
+          path: JSONPath(basePath, property)
+        });
+
+        if (typeof value === 'object' && !Array.isArray(value)) Reflect.set(target, property, proxyfull(value, handler, logger, JSONPath(basePath, property)));
+        else Reflect.set(target, property, value);
+
+        Reflect.set(original, property, value);
+
+        if (handler.set) return handler.set(target, property, value, receiver, JSONPath(basePath, property));
+        else return true;
+      }
+    });
+
+    return new Proxy(_target, _handler);
+
+  }
+
+  function JSONPath(basePath, property) {
+    return (basePath + '.' + property)
+      .match(/[^\.].*/)[0];
   }
 
   return rudy;

@@ -13,3 +13,5 @@ DONE two way data binding!!!!
 respond to changes in watcher (create another proxy, and a map of paths to actual nodes as well as the binders) - what did I mean by this?
 
 catch new live values added by new root data object
+
+also work on contenteditable objects
