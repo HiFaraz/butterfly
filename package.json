@@ -7,6 +7,12 @@
     "url": "https://hifaraz@github.com/HiFaraz/rudy.git",
     "type": "git"
   },
+  "scripts": {
+    "example": "node server"
+  },
   "author": "Faraz Syed <hello@farazsyed.com>",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "express": "^4.14.0"
+  }
 }

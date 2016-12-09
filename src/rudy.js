@@ -32,12 +32,13 @@
     component.__bindings__[path].push(binder);
   }
 
-  function buildDOM(component) {
-
-    if (component.templateURL) return stringToDOMNodes(getTemplateFromURL(component.templateURL));
-    else if (component.template) return stringToDOMNodes(component.template);
-    else return document.querySelector(component.target).childNodes;
-
+  function buildDOM(component, callback) {
+    if (component.templateURL) getTemplateFromURL(component.templateURL, pipe(function (error, result) {
+      if (error) throw Error('Could not download component template from ' + component.templateURL);
+      if (result) return result;
+    }, stringToDOMNodes, callback));
+    else if (component.template) callback(stringToDOMNodes(component.template));
+    else callback(document.querySelector(component.target).childNodes);
   }
 
   function createPatcher(component) {
@@ -125,21 +126,20 @@
   }
 
   function getTemplateFromURL(url, callback) {
-    return new Promise(function (resolve, reject) {
 
-      var request = new XMLHttpRequest();
-      request.open('GET', url, true);
-      request.onload = function () {
-        if (request.readyState != 4 || request.status != 200) reject();
-        else resolve(request.responseText);
-      };
-      try {
-        request.send();
-      } catch (error) {
-        reject(error);
-      }
-
-    });
+    var request = new XMLHttpRequest();
+    request.open('GET', url, true);
+    request.onload = function () {
+      console.timeEnd('Time to get partial');
+      if (request.readyState != 4 || request.status != 200) callback(true);
+      else callback(null, request.responseText);
+    };
+    try {
+      console.time('Time to get partial')
+      request.send();
+    } catch (error) {
+      callback(error);
+    }
   }
 
   function getProperty(source, path) {
@@ -153,24 +153,26 @@
   }
 
   function mapBindings(component) {
-    console.time('Time to render first view');
+    console.time('Time to get nodes');
     component.__bindings__ = {};
 
-    var dom = buildDOM(component);
-
-    if (dom instanceof Promise) return buildDOM(component)
-      .then(flattenNodeList)
-      .then(splitTextNodesByTemplates)
-      .then(buildBindingsForNodeList)
-      .then(syncAllPathsToView)
-      .then(publishDOM);
-    else pipe(
-      flattenNodeList,
-      splitTextNodesByTemplates,
-      buildBindingsForNodeList,
-      syncAllPathsToView,
-      publishDOM
-    )(dom)
+    var dom = buildDOM(
+      component,
+      pipe(
+        function (domResult) {
+          console.timeEnd('Time to get nodes');
+          console.time('Time to render first view');
+          return dom = domResult;
+        },
+        flattenNodeList,
+        splitTextNodesByTemplates,
+        buildBindingsForNodeList,
+        syncAllPathsToView,
+        publishDOM,
+        function () {
+          console.timeEnd('Time to render first view');
+        }
+      ));
 
     function buildBinding(node) {
       var typeTable = {};
@@ -247,7 +249,7 @@
           target.appendChild(dom[0]);
         } while (dom[0])
       }
-      console.timeEnd('Time to render first view');
+      return true;
     }
 
 

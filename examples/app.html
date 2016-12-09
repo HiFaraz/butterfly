@@ -1,0 +1,84 @@
+<table class="table table-responsive table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Variable</td>
+                <th>View(s)</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>(none)</td>
+            <td>
+                <p><input type="text" class="form-control"></p>
+                <p><span class="label label-info">BINDING</span> Not linked to any component data at all</p>
+            </td>
+        </tr>
+        <tr>
+            <td><code>name</code></td>
+            <td>
+                <p><input type="text" name="name" class="form-control" bind></p>
+                <p><span class="label label-primary">VALUE</span> <samp>{{ name }}</samp></p>
+                <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code>                    element by including the attribute <code>bind</code></p>
+                <p><span class="label label-info">WATCHER</span> Has a watcher function that intercerpts model updates and converts
+                    them to UPPERCASE</p>
+            </td>
+        </tr>
+        <tr>
+            <td><code>age</code></td>
+            <td>
+                <p><input type="range" name="age" class="form-control"></p>
+                <p><span class="label label-primary">VALUE</span> <samp>{{ age }}</samp></p>
+                <p><span class="label label-info">BINDING</span> Two-way binding enabled for elements bound to <code>age</code>                    by setting <code>watchers: { age: true }</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td><code>ageFn</code></td>
+            <td>
+                <p><input type="text" name="ageFn" class="form-control"></p <p><span class="label label-primary">VALUE</span>                <samp>{{ ageFn }}</samp></p>
+                <p><span class="label label-info">COMPUTATION</span> This is a computed value, it will update on any model or
+                    view updates</p>
+                <p><span class="label label-info">BINDING</span> No two-way data binding applied</p>
+            </td>
+        </tr>
+        <tr>
+            <td><code>actor</code></td>
+            <td>
+                <p><input type="checkbox" name="actor" class="form-control" no-bind></p>
+                <p><span class="label label-primary">VALUE</span> <samp>{{ actor }}</samp></p>
+                <p><span class="label label-info">BINDING</span> Two-way binding enabled for elements bound to <code>actor</code>                    by setting <code>watchers: {actor: true }</code>, but disabled for this <code>&lt;input&gt;</code> element
+                    by including the attribute <code>no-bind</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td><code>address.country</code></td>
+            <td>
+                <p><textarea name="address.country" class="form-control"></textarea></p>
+                <p><span class="label label-primary">VALUE</span> <samp>{{ address.country }}</samp></p>
+                <p><span class="label label-info">BINDING</span> No two-way data binding applied</p>
+                <p><span class="label label-info">WATCHER</span> Has a watcher function that creates a markdown preview below
+                    in <code>#preview</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td><code>email</code></td>
+            <td>
+                <p><input type="text" name="email"></p>
+                <p><span class="label label-primary">VALUE</span> <samp>{{ email }}</samp></p>
+                <p><span class="label label-info">BINDING</span> Two-way binding applied by watcher function</p>
+                <p><span class="label label-info">WATCHER</span> Has a watcher function that intercepts model updates and converts
+                    them to UPPERCASE</p>
+            </td>
+        </tr>
+        <tr>
+            <td><code>gender</code></td>
+            <td>
+                <p><select name="gender" class="form-control" bind>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select></p>
+                <p><span class="label label-primary">VALUE</span> <samp>{{ gender }}</samp></p>
+                <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;select&gt;</code>                    element by including the attribute <code>bind</code></p>
+            </td>
+        </tr>
+    </tbody>
+</table>
