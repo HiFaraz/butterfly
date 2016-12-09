@@ -125,12 +125,12 @@
         compare(person.data.name, person.__data__.name);
 
         // you don't need to be inside your component object to update the data. let's change an existing value
-        person.data.name='Micheal';
+        person.data.name = 'Micheal';
         compare(person.data.name, person.__data__.name);
 
         // go ahead, overwrite the whole data object
         person.data = {
-            name: 'Bonita',
+            name: 'Maria',
             age: 55,
             doubleAge: function() {
                 return this.age / 2;
