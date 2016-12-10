@@ -17,22 +17,89 @@
 
   'use strict';
 
-  var renderStart, renderDuration;
-
   function rudy(component) {
-    component.__livePaths__ = [];
-    mapBindings(component);
-    createProxyData(component);
-    return component;
+
+    if (component.data.$) throw TypeError('Found $ as data property (reserved namespace)');
+
+    component.__bindings = {}; // for each path, stores an array of functions to be run when the path is set
+    component.__computed = []; // array of paths with computed values
+
+    createView(component);
+    createViewModel(component);
+
+    return component.data;
   }
 
-  function addBinder(component, path, binder) {
-    var value = getProperty(component.data, path);
-    if (typeof value === 'function' && component.__livePaths__.indexOf(path) === -1) component.__livePaths__.push(path);
-    component.__bindings__[path].push(binder);
+  function buildBinding(component, node) {
+
+    if (typeof node === 'undefined') return _buildBinding;
+    else _buildBinding(node);
+
+    function _buildBinding(node) {
+      var typeTable = {};
+
+      typeTable.INPUT = function inputElements(node) {
+        if (node.getAttribute('name')) {
+          touchBinding(component, node.getAttribute('name'));
+          var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
+          saveBinding(component, node.getAttribute('name'), function (value) {
+            node[attr] = value;
+          });
+          setEventListenersOnFormElements(node, attr);
+        }
+      };
+
+      ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
+        typeTable[type] = function otherFormElements(node) {
+          if (node.getAttribute('name')) {
+            touchBinding(component, node.getAttribute('name'));
+            saveBinding(component, node.getAttribute('name'), function (value) {
+              node.value = value;
+            });
+            setEventListenersOnFormElements(node);
+          }
+        };
+      });
+
+      typeTable.VALUE = function inputElements(node) {
+        if (node.getAttribute('name')) {
+          touchBinding(component, node.getAttribute('name'));
+          saveBinding(component, node.getAttribute('name'), function (value) {
+            node.innerHTML = value;
+          });
+          node.innerHTML = '';
+        }
+      };
+
+      function setEventListenersOnFormElements(node, attribute = 'value') {
+        var events = ['onclick', 'onchange', 'onkeypress', 'oninput'];
+        var watch = getPathValue(component.watch, node.getAttribute('name'));
+        if (node.hasAttribute('no-bind') === false) {
+          if (component.watch === true || watch === true || (typeof watch !== 'function' && node.hasAttribute('bind'))) setEventListenersOnElement(node, function () {
+            setPathValue(component.data, node.getAttribute('name'), node[attribute]);
+          }, ...events);
+          else if (typeof watch === 'function') {
+            setEventListenersOnElement(node, function () {
+              var value = watch(node[attribute], node);
+              if (value) setPathValue(component.data, node.getAttribute('name'), value);
+            }, ...events);
+          }
+        }
+
+        function setEventListenersOnElement(node, handler, ...events) {
+          events.forEach(function (e) {
+            node[e] = handler;
+          });
+        }
+      }
+
+      if (typeof node.nodeName !== 'undefined' && typeTable[node.nodeName]) typeTable[node.nodeName](node);
+      return node;
+    }
+
   }
 
-  function buildDOM(component, callback) {
+  function buildView(component, callback) {
     if (component.templateURL)
       getTemplateFromURL(component.templateURL,
         pipe(
@@ -40,90 +107,49 @@
             if (error) throw Error('Could not download component template from ' + component.templateURL);
             if (result) return result;
           },
-          stringToDOMNodes,
+          stringToDOMDocument,
           callback
         )
       );
     else if (component.template)
       pipe(
-        stringToDOMNodes,
+        stringToDOMDocument,
         callback
       )(component.template);
     else callback(document.querySelector(component.target).childNodes);
   }
 
-  function createPatcher(component) {
-    return function patch(target, property, value, receiver, path) {
+  function createView(component) {
+    var dom;
 
-      // run watchers
-      var watcher = getProperty(component.watchers, path);
-      if (typeof watcher === 'function') value = watcher(value, null) || value;
+    buildView(component,
+      pipe(
+        bindViewToViewModel,
+        populateView,
+        mountViewToTarget
+      ));
 
-      // get live value
-      if (typeof value === 'function') value = value.call(Object.assign({}, component.__data__));
+    function bindViewToViewModel(doc) {
+      doc.forEach(function (node) {
+        traverseDOM(node, buildBinding(component));
+      });
+      dom = doc;
+      return component;
+    }
 
-      if (component.__bindings__[path]) {
-
-        // apply bindings
-        component.__bindings__[path].forEach(function (binder) {
-          binder(value);
-        });
-
-        // update live values
-        if (component.__livePaths__) component.__livePaths__.forEach(function (livePath) {
-
-          // run watchers
-          var liveValue = (getProperty(component.__data__, livePath) || function () {}).bind(Object.assign({}, component.__data__));
-          var liveWatcher = getProperty(component.watchers, livePath);
-          if (typeof liveWatcher === 'function') liveValue = liveWatcher(liveValue, null) || liveValue;
-
-          // get live value if still a function
-          if (typeof liveValue === 'function') liveValue = liveValue.call(Object.assign({}, component.__data__));
-
-          // apply bindings
-          component.__bindings__[livePath].forEach(function (binder) {
-            binder(liveValue);
-          });
-        });
-      }
-      return true;
-    };
+    function mountViewToTarget(component) {
+      mountNodesToTarget(component, dom);
+    }
   }
 
-  function createProxyData(component) {
-    component.__data__ = Object.assign({}, component.data);
-    var __proxy__ = null;
+  function createViewModel(component) {
+    component.__data = Object.assign({}, component.data);
 
-    Object.defineProperty(component, 'data', {
-      get: function () {
-        return __proxy__;
-      },
-      set: function (value) {
-        component.__data__ = Object.assign({}, value);
-        __proxy__ = new proxyfull(component.__data__, {
-          set: createPatcher(component)
-        });
-        if (typeof this.create === 'function') {
-          this.__create__ = this.create;
-          this.create.call(this.data);
-          delete this.create;
-        }
-        syncAllPathsToView(this);
-      },
+    component.data = new proxyfull(component.__data, {
+      set: patchViewOnModelChange(component)
     });
 
-    component.data = component.__data__;
-
-    return component;
-  }
-
-  function insertItemBetweenEachElementOfArray(targetArray, item) {
-    var result = [];
-    targetArray.forEach(function (element) {
-      result.push(element, item);
-    })
-    result.pop();
-    return result;
+    if (typeof component.create === 'function') component.create.call(component.data);
   }
 
   function getTemplateFromURL(url, callback) {
@@ -142,149 +168,68 @@
     }
   }
 
-  function getProperty(source, path) {
-    if (source && path) return path
+  function getPathValue(source, path) {
+    return path
       .split('.')
       .reduce(function (initial, key) {
         if (typeof initial === 'undefined') return undefined;
         else return initial[key];
       }, source);
-    else return undefined;
   }
 
-  function mapBindings(component) {
+  function JSONPath(basePath, property) {
+    return (basePath + '.' + property)
+      .match(/[^\.].*/)[0];
+  }
 
-    component.__bindings__ = {};
-
-    var dom = buildDOM(
-      component,
-      pipe(
-        function (domResult) {
-          domResult.forEach(function (node) {
-            traverseNodeAndDo(node, buildBinding);
-          });
-          dom = domResult;
-          return component;
-        },
-        syncAllPathsToView,
-        publishDOM
-      ));
-
-    function buildBinding(node) {
-      var typeTable = {};
-
-      typeTable.INPUT = function inputElements(node) {
-        if (node.getAttribute('name')) {
-          touchBinding(component, node.getAttribute('name'));
-          var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
-          addBinder(component, node.getAttribute('name'), function (value) {
-            node[attr] = value;
-          });
-          setEventListenersOnFormElements(node, attr);
-        }
-      };
-
-      ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
-        typeTable[type] = function otherFormElements(node) {
-          if (node.getAttribute('name')) {
-            touchBinding(component, node.getAttribute('name'));
-            addBinder(component, node.getAttribute('name'), function (value) {
-              node.value = value;
-            });
-            setEventListenersOnFormElements(node);
-          }
-        };
-      });
-
-      typeTable['#text'] = function textNodes(node) {
-        var matches = node.textContent.match(/{{(.+?)}}/g);
-        if (matches) {
-          var path = matches[0].replace(/[{}]/g, '').trim();
-          touchBinding(component, path);
-          addBinder(component, path, function (value) {
-            node.nodeValue = value;
-          });
-          node.textContent = '';
-        }
-      };
-
-      function setEventListenersOnFormElements(node, attribute = 'value') {
-        var events = ['onclick', 'onchange', 'onkeypress', 'oninput'];
-        var watcher = getProperty(component.watchers, node.getAttribute('name'));
-        if (node.hasAttribute('no-bind') === false) {
-          if (component.watchers === true || watcher === true || (typeof watcher !== 'function' && node.hasAttribute('bind'))) setEventListenersOnElement(node, function () {
-            set(component.data, node.getAttribute('name'), node[attribute]);
-          }, ...events);
-          else if (typeof watcher === 'function') {
-            setEventListenersOnElement(node, function () {
-              var value = watcher(node[attribute], node);
-              if (value) set(component.data, node.getAttribute('name'), value);
-            }, ...events);
-          }
-        }
-
-        function setEventListenersOnElement(node, handler, ...events) {
-          events.forEach(function (e) {
-            node[e] = handler;
-          });
-        }
-      }
-
-      if (typeof node.nodeName !== 'undefined' && typeTable[node.nodeName]) typeTable[node.nodeName](node);
-      return node;
+  function mountNodesToTarget(component, nodes) {
+    var target = document.querySelector(component.target);
+    while (target.firstChild) {
+      target.removeChild(target.firstChild);
     }
+    nodes.forEach(target.appendChild.bind(target));
+  }
 
-    function updateValue(node) {
-      var typeTable = {};
+  function patchViewOnModelChange(...args) {
+    const component = args[0];
+    if (args.length === 1) return _patch;
+    return _patch(...(args.slice(1)));
 
-      typeTable.INPUT = function inputElements(node) {
-        if (node.getAttribute('name')) {
-          setNodeValue(component, node.getAttribute('name'), node, function (value) {
-            node[((node.getAttribute('type') === 'checkbox') ? 'checked' : 'value')] = value;
-          });
-        }
+    function _patch(target, property, value, receiver, path) {
 
-      };
+      // run watchers
+      var watch = getPathValue(component.watch, path);
+      if (typeof watch === 'function') value = watch(value, null) || value;
 
-      ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
-        typeTable[type] = function otherFormElements(node) {
-          setNodeValue(component, node.getAttribute('name'), node, function (value) {
-            node.value = value;
-          });
-        };
-      });
+      // get live value
+      if (typeof value === 'function') value = value.call(Object.assign({}, component.__data));
 
-      typeTable['#text'] = function textNodes(node) {
-        var matches = node.textContent.match(/{{(.+?)}}/g);
-        if (matches) setNodeValue(component, matches[0].replace(/[{}]/g, '').trim(), node, function (value) {
-          node.textContent = value;
+      // only update if something actually wants the value
+      if (component.__bindings[path]) {
+        component.__bindings[path].forEach(function (binder) {
+          binder(value);
         });
-      };
-
-      function setNodeValue(component, path, node, callback) {
-        var value = getProperty(component.data, path);
-        if (value) {
-          if (typeof value === 'function') value = value.call(Object.assign({}, component.data));
-          callback(value);
-        }
       }
 
-      if (typeof node.nodeName !== 'undefined' && typeTable[node.nodeName]) typeTable[node.nodeName](node);
-      return node;
-    }
+      // update live values
+      if (component.__computed) component.__computed.forEach(function (path) {
 
-    function publishDOM(component) {
-      var target = document.querySelector(component.target);
+        // run watchers
+        var value = (getPathValue(component.__data, path) || function () {}).bind(Object.assign({}, component.__data));
+        var watch = getPathValue(component.watch, path);
+        if (typeof watch === 'function') value = watch(value, null) || value;
 
-      while (target.firstChild) {
-        target.removeChild(target.firstChild);
-      }
+        // get live value if still a function
+        if (typeof value === 'function') value = value.call(Object.assign({}, component.__data));
 
-      dom.forEach(target.appendChild.bind(target))
+        // apply bindings
+        component.__bindings[path].forEach(function (binder) {
+          binder(value);
+        });
+      });
 
-      return true;
-    }
-
+      return true; // required for the Proxy `handler.set` trap
+    };
   }
 
   function pipe(...funcs) {
@@ -296,98 +241,39 @@
     };
   }
 
-  function set(source, path, value) { // credit: http://stackoverflow.com/posts/18937118/revisions
-    var schema = source; // a moving reference to internal objects within source
-    var properties = path.split('.');
-    var len = properties.length;
-    for (var i = 0; i < len - 1; i++) {
-      var element = properties[i];
-      if (!schema[element]) schema[element] = {}
-      schema = schema[element];
-    }
-
-    schema[properties[len - 1]] = value;
+  function saveBinding(component, path, binder) {
+    var value = getPathValue(component.data, path);
+    if (typeof value === 'function' && component.__computed.indexOf(path) === -1) component.__computed.push(path);
+    component.__bindings[path].push(binder);
   }
 
-  function splitTextNodeByTemplates(node) {
-
-    var matches = node.textContent.match(/{{(.+?)}}/g);
-    if (matches) {
-      (function () {});
-      return splitNodeTextContentByMatchesAndCreateTextNodes(node, matches);
-    }
-    return node; // keep as is: does not have template strings
-
-    function splitNodeTextContentByMatchesAndCreateTextNodes(node, matches) {
-
-      var result = matches
-        .reduce(
-          function (arrayOfTextToSplitByAllMatches, match) {
-
-            return arrayOfTextToSplitByAllMatches
-              .reduce(
-                function (arrayOfTextAlreadySplitByMatch, textToSplitByMatch) {
-                  return (textToSplitByMatch.indexOf(match) === -1 || textToSplitByMatch === match) ? arrayOfTextAlreadySplitByMatch.concat(textToSplitByMatch) : arrayOfTextAlreadySplitByMatch.concat(insertItemBetweenEachElementOfArray(textToSplitByMatch.split(match), match));
-                }, []
-              );
-
-          }, [node.textContent]
-        )
-        .map(
-          function (textValueAfterSplittingByAllMatches) {
-            return document.createTextNode(textValueAfterSplittingByAllMatches);
-          }
-        );
-      return result;
-
+  function setPathValue(source, path, value) { // credit: http://stackoverflow.com/posts/18937118/revisions
+    var pointer = source;
+    var keys = path.split('.');
+    var length = keys.length;
+    for (var index = 0; index < length - 1; index++) {
+      var element = keys[index];
+      if (!pointer[element]) pointer[element] = {}
+      pointer = pointer[element];
     }
 
+    pointer[keys[length - 1]] = value;
   }
 
-  function stringToDOMNodes(str) {
+  function stringToDOMDocument(str) {
     return Array.from((new DOMParser()).parseFromString(str, 'text/html').body.childNodes);
   }
 
-  function syncAllPathsToView(component) {
-    var patch = createPatcher(component);
-    Object.keys(component.__bindings__).forEach(function (path) {
-      syncPathToView(component, path, patch);
+  function populateView(component) {
+    Object.keys(component.__bindings).forEach(function (path) {
+      populateViewForModelPath(component, path, patchViewOnModelChange(component));
     });
     return component;
   }
 
-  function syncPathToView(component, path, patch) {
-    if (typeof patch === 'undefined') patch = createPatcher(component);
-    var value = getProperty(component.__data__, path);
+  function populateViewForModelPath(component, path, patch) {
+    var value = getPathValue(component.__data, path);
     if (value) patch(null, null, value, null, path);
-  }
-
-  function touchBinding(component, path) {
-    component.__bindings__[path] = component.__bindings__[path] || [];
-  }
-
-  function traverseNodeAndDo(pointer, callback) { // inspiration: http://www.javascriptcookbook.com/article/Traversing-DOM-subtrees-with-a-recursive-walk-the-DOM-function/
-    callback(pointer);
-
-    pointer = pointer.firstChild;
-    while (pointer) {
-      if (pointer.nodeName === '#text') {
-        var splitArray = splitTextNodeByTemplates(pointer);
-        if (Array.isArray(splitArray)) {
-          splitArray.forEach(
-            pipe(
-              callback,
-              function (node) {
-                pointer.parentNode.insertBefore(node, pointer);
-              }
-            )
-          );
-          pointer = pointer.previousSibling;
-          pointer.parentNode.removeChild(pointer.nextSibling);
-        }
-      } else traverseNodeAndDo(pointer, callback);
-      pointer = pointer.nextSibling;
-    }
   }
 
   function proxyfull(original, handler, logger, basePath) {
@@ -407,13 +293,6 @@
 
     const _handler = Object.assign({}, handler, {
       set: function (target, property, value, receiver) {
-        if (logger) logger({
-          action: 'set',
-          target: target,
-          value: value,
-          receiver: receiver,
-          path: JSONPath(basePath, property)
-        });
 
         if (typeof value === 'object' && !Array.isArray(value)) Reflect.set(target, property, proxyfull(value, handler, logger, JSONPath(basePath, property)));
         else Reflect.set(target, property, value);
@@ -429,9 +308,18 @@
 
   }
 
-  function JSONPath(basePath, property) {
-    return (basePath + '.' + property)
-      .match(/[^\.].*/)[0];
+  function touchBinding(component, path) {
+    component.__bindings[path] = component.__bindings[path] || [];
+  }
+
+  function traverseDOM(pointer, callback) { // inspiration: http://www.javascriptcookbook.com/article/Traversing-DOM-subtrees-with-a-recursive-walk-the-DOM-function/
+    callback(pointer);
+
+    pointer = pointer.firstChild;
+    while (pointer) {
+      traverseDOM(pointer, callback);
+      pointer = pointer.nextSibling;
+    }
   }
 
   return rudy;

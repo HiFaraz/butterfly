@@ -263,12 +263,10 @@ var person = rudy(
                 
                 // you can access the rest of the model in here!
                 // the `this` variable will give you a locally scoped copy of the model
-                // console.log('I\'m calling you from *inside* the function', this.age);
 
                 // remember, you only have a local copy of the model
                 // you can alter it, but it will not have an affect outside of this function
                 // and it will not update the view
-                this.age = 1;
 
                 // return a value to pass it to the model (should be: 2)
                 return this.age * 2;
@@ -276,9 +274,9 @@ var person = rudy(
         },
 
         // create some watchers! get notified by input events and model updates
-        // to enable two-way binding on all variables, set `watchers: true`
+        // to enable two-way binding on all variables, set `watch: true`
         // instead of passing it an object
-        watchers: {
+        watch: {
 
             // setting to `true` tells Rudy to enable two-way data-binding on all form elements
             actor: true,
@@ -292,7 +290,7 @@ var person = rudy(
                     // instead of omitting the return statement, you can also explicitly return a falsy value
                     // for example: `return false;` or `return null;` - these will not cause the form element
                     // to update
-                    
+
                 }
             },
 
@@ -335,24 +333,12 @@ var person = rudy(
 );
 
 // you don't need to be inside your component object to update the data. let's change an existing value
-person.data.name = 'Micheal';
-
-// go ahead, overwrite the whole data object
-person.data = {
-    name: 'Maria',
-    age: 55,
-    ageFn: function() {
-        return this.age / 2;
-    }
-};
-
-// let's add back some values we wiped away
-person.data.address = {country: 'Colombia'};
-person.data.address.country = '# Mexico\n* A land of wonder';
-person.data.actor = true;
+person.name = 'Maria';
+person.address.country = '# Mexico\n* A land of wonder';
+person.actor = true;
 
 // and one more brand new variable
-person.data.gender = 'female';
+person.gender = 'female';
 
 // this is a utility function to make an AJAX request. it's not part of Rudy. we'll use it down below to bind the view to a server response
 function getResource(url, callback) {
