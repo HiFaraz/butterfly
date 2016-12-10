@@ -56,17 +56,16 @@
             <div class="col-md-8" style="border-right: 1px solid #ccc">
                 <h2 id="get-started">Get started in 10 seconds</h2>
                 <strong>Define your template:</strong>
-                <pre class="prettyprint">&lt;div id="app"&gt; Name: &lt;input type="text" name="firstName" bind&gt; Hi &lt;value name="firstName"&gt;&lt;/value&gt;!&lt;/div&gt;</pre>
+                <pre class="prettyprint">&lt;div id="welcome"&gt; Message: &lt;input type="text" name="message" bind&gt; &lt;value name="message"&gt;&lt;/value&gt;&lt;/div&gt;</pre>
                 <strong>Define your component:</strong>
-                <pre class="prettyprint">var person = rudy( { target: '#app', data: { firstName: 'Micheal'} } );</pre>
+                <pre class="prettyprint">var welcome = rudy( { target: '#welcome', data: { message: ''} } );</pre>
                 <strong>Mix things up:</strong>
-                <pre class="prettyprint">person.firstName = 'George';</pre>
+                <pre class="prettyprint">welcome.message = 'Hello World!';</pre>
                 <strong>Check out the result:</strong>
-                <div class="well" id="demo-app">
-                    <p><input type="text" name="firstName" bind class="form-control"></p>
-                    <p class="lead text-success">
-                        Hi
-                        <value name="firstName"></value>!
+                <div class="well" id="welcome">
+                    <p>Message: <input type="text" name="message" bind class="form-control"></p>
+                    <p class="lead">
+                        <value name="message"></value>
                     </p>
                 </div>
                 <p><small><a href="#top">(back to top)</a></small></p>
@@ -171,12 +170,26 @@
                         <tr>
                             <td>Rendering DOM updates</td>
                             <td>
-                                <p>Touch only the DOM elements mapped to the data model. This happens in the Rudy internals.
-                                    It creates a map when you first load the component.</p>
+                                <dl>
+                                    <dt>Render updated values according to a map</dt>
+                                    <dd>
+                                        <p>
+                                            <p>Touch only the DOM elements mapped to the data model. This happens in the Rudy
+                                                internals. It creates a map when you first load the component.</p>
+                                        </p>
+                                    </dd>
+                                </dl>
                             </td>
                             <td>
-                                <p>Re-writing the entire DOM on a data model update:</p>
-                                <p><code>component.target.innerHTML = '...'</code></p>
+                                <dl>
+                                    <dt>Re-writing the entire DOM on a data model update:</dt>
+                                    <dd>
+                                        <p><code>component.target.innerHTML = '...'</code></p>
+                                    </dd>
+                                    <dt>Scanning the real or virtual DOM to see what needs to be updated</dt>
+                                    <dd>
+                                    </dd>
+                                </dl>
                             </td>
                         </tr>
                         <tr>
@@ -209,7 +222,7 @@
                     <div class="panel-heading">
                         <h3 class="panel-title">Model views</h3>
                     </div>
-                    <div id="app" class="panel-body">
+                    <div id="person" class="panel-body">
                     </div>
                 </div>
             </div>
@@ -219,6 +232,18 @@
                         <h3 class="panel-title">Markdown preview of <code>address.country</code></h3>
                     </div>
                     <div id="preview" class="panel-body"></div>
+                </div>
+                <div class="panel panel-success ">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Another component</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p id="friend" class="lead"></p>
+                        <p><span class="label label-primary">COMPONENT</span> This component is defined separately from the
+                            component to the left.</p>
+                        <p><span class="label label-info">WATCHER</span> The demo component to the left has a watcher function
+                            that interacts with the <code>firstName</code> property of this component</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -239,18 +264,12 @@
     </div>
     <script src="https://unpkg.com/marked@0.3.6"></script>
     <script src="/js/rudy.js"></script>
-    <script>
-        'use strict';
-
-
-
-    </script>
     <script id="code">
 'use strict';
 
 // here's the code for the demo in the introduction
-var demoPerson = new rudy( { target: '#demo-app', data: { firstName: 'Micheal'} } );
-demoPerson.firstName = 'George';
+var welcome = new rudy( { target: '#welcome', data: { message: ''} } );
+welcome.message = 'Hello World!';
 
 // let's go! all you have to do is send an object to rudy.
 // hang on to the returned object btw, you can do stuff with it later
@@ -260,7 +279,7 @@ var person = rudy(
     {
 
         // specify the tag id where you want to render your component
-        target: '#app',
+        target: '#person',
 
         // enter your initial data
         data : {
@@ -326,8 +345,8 @@ var person = rudy(
             name: function(value, element) {
 
                 // you can interact with a totally different component with ordinary JavaScript
-                // this is the demo component in the page introduction section
-                demoPerson.firstName = value;
+                // this is the component under the markdown preview
+                friend.firstName = value.toUpperCase();
             }
         },
 
@@ -347,9 +366,89 @@ var person = rudy(
                     vm.email = body.email;
                 });
         },
-        // you can load a template from a file! the order of precedence is:
-        // templateURL > template > whatever is already in the target element
-        templateURL: 'app.html'
+        // you can also specify a template as a string. this will override whatever is already in the target element
+        template: `
+        <table class="table table-responsive table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Variable</td>
+                        <th>View(s)</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>name</code></td>
+                    <td>
+                        <!--you can enable two-way data binding on one specific form element by adding a \`bind\` attribute-->
+                        <p><input type="text" name="name" class="form-control" bind></p>
+                        <!--you can output the model value as text by using <value name=" variable_name ">-->
+                        <p><span class="label label-primary">VALUE</span> <samp><value name="name"></samp>
+                        </p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code> element by including the attribute <code>bind</code></p>
+                        <p><span class="label label-info">WATCHER</span> Has a watcher function that interacts with another component
+                            located in <code>#friend</code></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>age</code></td>
+                    <td>
+                        <p><input type="range" name="age" class="form-control"></p>
+                        <p><span class="label label-primary">VALUE</span> <samp><value name="age"></samp></p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for elements bound to <code>age</code> by setting <code>watchers: { age: true }</code></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>ageFn</code></td>
+                    <td>
+                        <p><input type="text" name="ageFn" class="form-control"></p <p><span class="label label-primary">VALUE</span> <samp><value name="ageFn"></samp></p>
+                        <p><span class="label label-info">COMPUTATION</span> This is a computed value, it will update on any model or
+                            view updates</p>
+                        <p><span class="label label-info">BINDING</span> No two-way data binding applied</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>actor</code></td>
+                    <td>
+                        <p><input type="checkbox" name="actor" class="form-control" no-bind></p>
+                        <!--you can disable two-way data binding on a single form element ONLY by adding a \`no-bind\` attribute, in case you allowed it globally or even by the \`bind\` attribute-->
+                        <p><span class="label label-primary">VALUE</span> <samp><value name="actor"></samp></p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for elements bound to <code>actor</code> by setting <code>watchers: {actor: true }</code>, but disabled for this <code>&lt;input&gt;</code> element
+                            by including the attribute <code>no-bind</code></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>address.country</code></td>
+                    <td>
+                        <p><textarea name="address.country" class="form-control"></textarea></p>
+                        <p><span class="label label-primary">VALUE</span> <samp><value name="address.country"></samp></p>
+                        <p><span class="label label-info">BINDING</span> No two-way data binding applied</p>
+                        <p><span class="label label-info">WATCHER</span> Has a watcher function that creates a markdown preview below
+                            in <code>#preview</code></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>email</code></td>
+                    <td>
+                        <p><input type="text" name="email"></p>
+                        <p><span class="label label-primary">VALUE</span> <samp><value name="email"></samp></p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding applied by watcher function</p>
+                        <p><span class="label label-info">WATCHER</span> Has a watcher function that intercepts model updates and converts them to lowercase</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>gender</code></td>
+                    <td>
+                        <p><select name="gender" class="form-control" bind>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                    </select></p>
+                        <p><span class="label label-primary">VALUE</span> <samp><value name="gender"></samp></p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;select&gt;</code> element by including the attribute <code>bind</code></p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        `
     }
 );
 
@@ -360,6 +459,15 @@ person.actor = true;
 
 // and one more brand new variable
 person.gender = 'female';
+
+// this is a second component that `person` can interact with
+var friend = rudy({
+    target: '#friend',
+    data: {
+        firstName: 'this will be overwritten by the `person` component'
+    },
+    template: 'HELLO <value name="firstName"></value>!'
+});
 
 // this is a utility function to make an AJAX request. it's not part of Rudy. we'll use it down below to bind the view to a server response
 function getResource(url, callback) {

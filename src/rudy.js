@@ -99,38 +99,19 @@
 
   }
 
-  function buildView(component, callback) {
-    if (component.templateURL)
-      getTemplateFromURL(component.templateURL,
-        pipe(
-          function (error, result) {
-            if (error) throw Error('Could not download component template from ' + component.templateURL);
-            if (result) return result;
-          },
-          stringToDOMDocument,
-          callback
-        )
-      );
-    else if (component.template)
-      pipe(
-        stringToDOMDocument,
-        callback
-      )(component.template);
-    else pipe(
-      Array.from,
-      callback
-    )(document.querySelector(component.target).childNodes);
+  function buildView(component) {
+    if (component.template) return stringToDOMDocument(component.template);
+    else return Array.from(document.querySelector(component.target).childNodes);
   }
 
   function createView(component) {
     var dom;
-
-    buildView(component,
-      pipe(
-        bindViewToViewModel,
-        populateView,
-        mountViewToTarget
-      ));
+    pipe(
+      buildView,
+      bindViewToViewModel,
+      populateView,
+      mountViewToTarget
+    )(component);
 
     function bindViewToViewModel(doc) {
       doc.forEach(function (node) {
@@ -204,7 +185,9 @@
 
       // run watchers
       var watch = getPathValue(component.watch, path);
-      if (typeof watch === 'function') value = watch(value, null) || value;
+      try {
+        if (typeof watch === 'function') value = watch(value, null) || value;
+      } catch (e) {}
 
       // get live value
       if (typeof value === 'function') value = value.call(Object.assign({}, component.__data));
