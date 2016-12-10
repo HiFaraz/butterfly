@@ -8,3 +8,14 @@
     background-color: rgb(95, 158, 160);
     color: rgb(255, 255, 255);
 }
+
+pre,
+div>pre.prettyprint {
+    border: none;
+    font-size: 1.7rem;
+    padding: 1rem;
+}
+
+p.bg-warning {
+    padding: 15px;
+}

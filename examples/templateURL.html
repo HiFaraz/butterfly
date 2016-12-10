@@ -41,9 +41,9 @@
             </div>
         </nav>
         <div class="jumbotron" style="margin-top: 2rem;">
-            <h1>Render your view in under 11ms* for 2.2kb</h1>
+            <h1>Render views in under 22ms for 2.2kb* </h1>
             <p>Make simple, flexible, re-usable, social front-end components with Rudy</p>
-            <small>* average render time</small>
+            <small>* average render time with bundled templates, gzipped and minified</small>
         </div>
         <div class="row">
             <div class="col-lg-12">
@@ -56,16 +56,17 @@
             <div class="col-md-8" style="border-right: 1px solid #ccc">
                 <h2 id="get-started">Get started in 10 seconds</h2>
                 <strong>Define your template:</strong>
-                <pre>&lt;div id="app"&gt; {{ firstName }} &lt;input type="text" name="firstName"&gt; &lt;/div&gt;</pre>
+                <pre class="prettyprint">&lt;div id="app"&gt; {{ firstName }} &lt;input type="text" name="firstName"&gt; &lt;/div&gt;</pre>
                 <strong>Define your component:</strong>
-                <pre>var person = rudy( { target: '#app', data: { firstName: 'Micheal'} } );</pre>
+                <pre class="prettyprint">var person = rudy( { target: '#app', data: { firstName: 'Micheal'} } );</pre>
                 <strong>Mix things up:</strong>
-                <pre>person.data.firstName = 'George';</pre>
+                <pre class="prettyprint">person.data.firstName = 'George';</pre>
                 <p><small><a href="#top">(back to top)</a></small></p>
             </div>
             <div class="col-md-4">
                 <h2>Status</h2>
-                <p>Rudy is in pre-release state. It weighs ~ 2.2kb minified and gzipped.</p>
+                <p class="bg-warning">Rudy is in pre-release state.</p>
+                <p>It weighs ~ 2.2kb minified and gzipped.</p>
                 <p>Rudy relies on ECMAScript 2015 Proxy objects. A limited functionality polyfill is available <a href="https://github.com/GoogleChrome/proxy-polyfill">here</a>.</p>
                 <p>There is a fully working demo below, and the demo source code is included in the bottom of the document.</p>
                 <p>The views below are dynamically generated. The view internals are not in the source HTML document.</p>
@@ -75,8 +76,8 @@
         <div class="row">
             <div class="col-md-12">
                 <h2 id="simple-and-flexible">Simple and flexible</h2>
-                <p>Rudy began with a question: can you balance simplicity <em>and</em> flexibility in front-end components?
-                    I made up a list of wants and to-avoids:</p>
+                <p class="lead">Rudy began with a question: can you balance simplicity <em>and</em> flexibility in front-end components?</p>
+                <p>These are the core ideas behind Rudy:</p>
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -93,60 +94,70 @@
                                 <p><code>component.data.property = newValue;</code></p>
                             </td>
                             <td>
-                                <ul>
-                                    <li>
-                                        <p>Setting functions:</p>
+                                <dl>
+                                    <dt>Setting functions:</dt>
+                                    <dd>
                                         <p><code>component.set('property', newValue);</code></p>
-                                    </li>
-                                    <li>
-                                        <p>Digest cycles / dirty checking clogging the CPU:</p>
+                                    </dd>
+                                    <dt>Digest cycles / dirty checking clogging the CPU:</dt>
+                                    <dd>
                                         <p><code>$scope.apply(function(){ $scope.property = newValue });</code></p>
-                                    </li>
-                                </ul>
+                                    </dd>
+                                </dl>
                             </td>
                         </tr>
                         <tr>
                             <td>Data-binding</td>
                             <td>
-                                <p><strong>One-way binding by default</strong></p>
-                                <p>Bind the value of the textbox to the variable
-                                    <code>address.city</code> through the <code>name</code> attribute. However typing in
-                                    the textbox will not update the data model.</p>
-                                <p><code>&lt;input type="text" name="address.city"&gt;</code></p>
-                                <p><strong>Two-way binding on a specific element</strong></p>
-                                <p>
-                                    Add two-way binding to the textbox from above through a
-                                    <code>bind</code> attribute.
-                                </p>
-                                <p><code>&lt;input type="text" name="address.city" bind&gt;</code></p>
-                                <p><strong>Two-way binding on a specific data model</strong></p>
-                                <p>
-                                    Add two-way binding only to <code>address.city</code> through the component configuration:
-                                </p>
-                                <p><code>watchers: { 'address.city' : true }</code></p>
-                                <p><strong>Two-way binding on the entire data model</strong></p>
-                                <p>
-                                    Add two-way binding to the entire data model through the component configuration:
-                                </p>
-                                <p><code>watchers: true</code></p>
-                                <p>
-                                    In this case, you can remove two-way binding to a specific form element through an
-                                    <code>no-bind</code> attribute.
-                                </p>
-                                <p><code>&lt;input type="text" name="address.city" no-bind&gt;</code></p>
+                                <dl>
+                                    <dt>One-way binding by default</dt>
+                                    <dd>
+                                        <p>Bind the value of the textbox to the variable
+                                            <code>address.city</code> through the <code>name</code> attribute. However typing
+                                            in the textbox will not update the data model.</p>
+                                        <p><code>&lt;input type="text" name="address.city"&gt;</code></p>
+                                    </dd>
+                                    <dt>Two-way binding on a specific element</dt>
+                                    <dd>
+                                        <p>
+                                            Add two-way binding to the textbox from above through a
+                                            <code>bind</code> attribute.
+                                        </p>
+                                        <p><code>&lt;input type="text" name="address.city" bind&gt;</code></p>
+                                    </dd>
+                                    <dt>Two-way binding on a specific data model</dt>
+                                    <dd>
+                                        <p>
+                                            Add two-way binding only to <code>address.city</code> through the component configuration:
+                                        </p>
+                                        <p><code>watchers: { 'address.city' : true }</code></p>
+                                    </dd>
+                                    <dt>Two-way binding on the entire data model</dt>
+                                    <dd>
+                                        <p>
+                                            Add two-way binding to the entire data model through the component configuration:
+                                        </p>
+                                        <p><code>watchers: true</code></p>
+                                        <p>
+                                            In this case, you can remove two-way binding to a specific form element through an
+                                            <code>no-bind</code> attribute.
+                                        </p>
+                                        <p><code>&lt;input type="text" name="address.city" no-bind&gt;</code></p>
+                                    </dd>
+                                </dl>
                             </td>
                             <td>
-                                <ul>
-                                    <li>
-                                        <p>One-way binding only:</p>
+                                <dl>
+                                    <dt>One-way binding only:</dt>
+                                    <dd>
                                         <p><code>&lt;input type="text" value={address.city}&gt;</code> (React)</p>
-                                    </li>
-                                    <li>
-                                        <p>Two-way binding only:</p>
+                                    </dd>
+                                    <dt>Two-way binding only:</dt>
+                                    <dd>
                                         <p><code>&lt;input type="text" ng-model="address.city"&gt;</code> (AngularJS)</p>
                                         <p><code>&lt;input type="text" v-model="address.city"&gt;</code> (Vue.js)</p>
-                                    </li>
-                                </ul>
+                                    </dd>
+                                </dl>
                             </td>
                         </tr>
                         <tr>
@@ -169,7 +180,7 @@
                                 <p><code>watchers: { 'address.city' : function(value, element) { } }</code></p>
                             </td>
                             <td>
-                                not applicable
+                                <p class="text-muted"><small>not applicable</small></p>
                             </td>
                         </tr>
                     </tbody>
@@ -213,7 +224,7 @@
         </div>
         <div class="row">
             <div class="col-lg-12">
-                <div id="codeView"></div>
+                <pre id="codeView" class="prettyprint"></pre>
                 <p><small><a href="#top">(back to top)</a></small></p>
             </div>
         </div>
@@ -317,13 +328,10 @@ var person = rudy(
                     vm.email = body.email;
                 });
         },
-
+        
         // you can load a template from a file! the order of precedence is:
         // templateURL > template > whatever is already in the target element
-        // templateURL: '/partials/app.html'
         templateURL: 'app.html'
-        
-        
     }
 );
 
@@ -368,16 +376,17 @@ function getResource(url, callback) {
     });
 
 }
-
-// generate the code preview
-document.getElementById('codeView').innerHTML = marked('```javascript\n'+document.getElementById('code').innerHTML+'\n```').trim();
-
+    </script>
+    <script>
+        // generate the code preview
+        document.getElementById('codeView').innerHTML = marked('```javascript\n'+document.getElementById('code').innerHTML+'\n```').trim();
     </script>
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
         crossorigin="anonymous"></script>
+    <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
 </body>
 
 </html>
