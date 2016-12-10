@@ -19,3 +19,7 @@ div>pre.prettyprint {
 p.bg-warning {
     padding: 15px;
 }
+
+#demo-app.well {
+    border: none;
+}

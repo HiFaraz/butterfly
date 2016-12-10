@@ -56,11 +56,19 @@
             <div class="col-md-8" style="border-right: 1px solid #ccc">
                 <h2 id="get-started">Get started in 10 seconds</h2>
                 <strong>Define your template:</strong>
-                <pre class="prettyprint">&lt;div id="app"&gt; {{ firstName }} &lt;input type="text" name="firstName"&gt; &lt;/div&gt;</pre>
+                <pre class="prettyprint">&lt;div id="app"&gt; Name: &lt;input type="text" name="firstName" bind&gt; Hi &lt;value name="firstName"&gt;&lt;/value&gt;!&lt;/div&gt;</pre>
                 <strong>Define your component:</strong>
                 <pre class="prettyprint">var person = rudy( { target: '#app', data: { firstName: 'Micheal'} } );</pre>
                 <strong>Mix things up:</strong>
                 <pre class="prettyprint">person.firstName = 'George';</pre>
+                <strong>Check out the result:</strong>
+                <div class="well" id="demo-app">
+                    <p><input type="text" name="firstName" bind class="form-control"></p>
+                    <p class="lead text-success">
+                        Hi
+                        <value name="firstName"></value>!
+                    </p>
+                </div>
                 <p><small><a href="#top">(back to top)</a></small></p>
             </div>
             <div class="col-md-4">
@@ -231,8 +239,18 @@
     </div>
     <script src="https://unpkg.com/marked@0.3.6"></script>
     <script src="/js/rudy.js"></script>
+    <script>
+        'use strict';
+
+
+
+    </script>
     <script id="code">
 'use strict';
+
+// here's the code for the demo in the introduction
+var demoPerson = new rudy( { target: '#demo-app', data: { firstName: 'Micheal'} } );
+demoPerson.firstName = 'George';
 
 // let's go! all you have to do is send an object to rudy.
 // hang on to the returned object btw, you can do stuff with it later
@@ -304,9 +322,12 @@ var person = rudy(
                 return value.toLowerCase();
             },
 
-            // let's force all name to be UPPERCASE 
+            // let's interact with another component
             name: function(value, element) {
-                return value.toUpperCase();
+
+                // you can interact with a totally different component with ordinary JavaScript
+                // this is the demo component in the page introduction section
+                demoPerson.firstName = value;
             }
         },
 
