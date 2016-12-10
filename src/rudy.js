@@ -17,9 +17,9 @@
 
   'use strict';
 
-  function rudy(component) {
+  var renderStart, renderDuration;
 
-    validate(component);
+  function rudy(component) {
     component.__livePaths__ = [];
     mapBindings(component);
     createProxyData(component);
@@ -33,11 +33,22 @@
   }
 
   function buildDOM(component, callback) {
-    if (component.templateURL) getTemplateFromURL(component.templateURL, pipe(function (error, result) {
-      if (error) throw Error('Could not download component template from ' + component.templateURL);
-      if (result) return result;
-    }, stringToDOMNodes, callback));
-    else if (component.template) callback(stringToDOMNodes(component.template));
+    if (component.templateURL)
+      getTemplateFromURL(component.templateURL,
+        pipe(
+          function (error, result) {
+            if (error) throw Error('Could not download component template from ' + component.templateURL);
+            if (result) return result;
+          },
+          stringToDOMNodes,
+          callback
+        )
+      );
+    else if (component.template)
+      pipe(
+        stringToDOMNodes,
+        callback
+      )(component.template);
     else callback(document.querySelector(component.target).childNodes);
   }
 
@@ -115,27 +126,16 @@
     return result;
   }
 
-  function flattenNodeList(nodes) {
-    var flatNodeList = [];
-    nodes.forEach(function (node) {
-      traverseDOM(node, function (node) {
-        flatNodeList.push(node);
-      })
-    });
-    return flatNodeList;
-  }
-
   function getTemplateFromURL(url, callback) {
-
+    console.time('getTemplateFromURL');
     var request = new XMLHttpRequest();
     request.open('GET', url, true);
     request.onload = function () {
-      console.timeEnd('Time to get partial');
+      console.timeEnd('getTemplateFromURL');
       if (request.readyState != 4 || request.status != 200) callback(true);
       else callback(null, request.responseText);
     };
     try {
-      console.time('Time to get partial')
       request.send();
     } catch (error) {
       callback(error);
@@ -153,31 +153,27 @@
   }
 
   function mapBindings(component) {
-    console.time('Time to get nodes');
+
     component.__bindings__ = {};
 
     var dom = buildDOM(
       component,
       pipe(
         function (domResult) {
-          console.timeEnd('Time to get nodes');
-          console.time('Time to render first view');
-          return dom = domResult;
+          domResult.forEach(function (node) {
+            traverseNodeAndDo(node, buildBinding);
+          });
+          dom = domResult;
+          return component;
         },
-        flattenNodeList,
-        splitTextNodesByTemplates,
-        buildBindingsForNodeList,
         syncAllPathsToView,
-        publishDOM,
-        function () {
-          console.timeEnd('Time to render first view');
-        }
+        publishDOM
       ));
 
     function buildBinding(node) {
       var typeTable = {};
 
-      typeTable.INPUT = function (node) {
+      typeTable.INPUT = function inputElements(node) {
         if (node.getAttribute('name')) {
           touchBinding(component, node.getAttribute('name'));
           var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
@@ -188,8 +184,8 @@
         }
       };
 
-      ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function (type) {
-        typeTable[type] = function (node) {
+      ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
+        typeTable[type] = function otherFormElements(node) {
           if (node.getAttribute('name')) {
             touchBinding(component, node.getAttribute('name'));
             addBinder(component, node.getAttribute('name'), function (value) {
@@ -200,7 +196,7 @@
         };
       });
 
-      typeTable['#text'] = function (node) {
+      typeTable['#text'] = function textNodes(node) {
         var matches = node.textContent.match(/{{(.+?)}}/g);
         if (matches) {
           var path = matches[0].replace(/[{}]/g, '').trim();
@@ -235,23 +231,59 @@
       }
 
       if (typeof node.nodeName !== 'undefined' && typeTable[node.nodeName]) typeTable[node.nodeName](node);
+      return node;
     }
 
-    function buildBindingsForNodeList(nodes) {
-      nodes.forEach(buildBinding);
-      return component;
+    function updateValue(node) {
+      var typeTable = {};
+
+      typeTable.INPUT = function inputElements(node) {
+        if (node.getAttribute('name')) {
+          setNodeValue(component, node.getAttribute('name'), node, function (value) {
+            node[((node.getAttribute('type') === 'checkbox') ? 'checked' : 'value')] = value;
+          });
+        }
+
+      };
+
+      ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
+        typeTable[type] = function otherFormElements(node) {
+          setNodeValue(component, node.getAttribute('name'), node, function (value) {
+            node.value = value;
+          });
+        };
+      });
+
+      typeTable['#text'] = function textNodes(node) {
+        var matches = node.textContent.match(/{{(.+?)}}/g);
+        if (matches) setNodeValue(component, matches[0].replace(/[{}]/g, '').trim(), node, function (value) {
+          node.textContent = value;
+        });
+      };
+
+      function setNodeValue(component, path, node, callback) {
+        var value = getProperty(component.data, path);
+        if (value) {
+          if (typeof value === 'function') value = value.call(Object.assign({}, component.data));
+          callback(value);
+        }
+      }
+
+      if (typeof node.nodeName !== 'undefined' && typeTable[node.nodeName]) typeTable[node.nodeName](node);
+      return node;
     }
 
     function publishDOM(component) {
       var target = document.querySelector(component.target);
-      if (target.innerHTML.trim() === '') {
-        do {
-          target.appendChild(dom[0]);
-        } while (dom[0])
+
+      while (target.firstChild) {
+        target.removeChild(target.firstChild);
       }
+
+      dom.forEach(target.appendChild.bind(target))
+
       return true;
     }
-
 
   }
 
@@ -277,59 +309,43 @@
     schema[properties[len - 1]] = value;
   }
 
+  function splitTextNodeByTemplates(node) {
 
-  function splitTextNodesByTemplates(nodes) {
-    var result = [];
-    nodes.forEach(process);
-
-    function process(node) {
-      var arr;
-      if (node.nodeName === '#text') result = result.concat(processTextNode(node));
-      else result.push(node);
+    var matches = node.textContent.match(/{{(.+?)}}/g);
+    if (matches) {
+      (function () {});
+      return splitNodeTextContentByMatchesAndCreateTextNodes(node, matches);
     }
+    return node; // keep as is: does not have template strings
 
-    function processTextNode(node) {
-      var matches = node.textContent.match(/{{(.+?)}}/g);
-      if (matches) {
-        return processTextNodeMatches(node, matches);
-      } else return node;
-    }
+    function splitNodeTextContentByMatchesAndCreateTextNodes(node, matches) {
 
-    function processTextNodeMatches(node, matches) {
-      var result = splitTextContentByMatches(node.textContent, matches).map(function (textContent) {
-        var element = document.createTextNode(textContent);
-        node.parentNode.insertBefore(element, node);
-        return element
-      });
-      node.parentNode.removeChild(node);
+      var result = matches
+        .reduce(
+          function (arrayOfTextToSplitByAllMatches, match) {
+
+            return arrayOfTextToSplitByAllMatches
+              .reduce(
+                function (arrayOfTextAlreadySplitByMatch, textToSplitByMatch) {
+                  return (textToSplitByMatch.indexOf(match) === -1 || textToSplitByMatch === match) ? arrayOfTextAlreadySplitByMatch.concat(textToSplitByMatch) : arrayOfTextAlreadySplitByMatch.concat(insertItemBetweenEachElementOfArray(textToSplitByMatch.split(match), match));
+                }, []
+              );
+
+          }, [node.textContent]
+        )
+        .map(
+          function (textValueAfterSplittingByAllMatches) {
+            return document.createTextNode(textValueAfterSplittingByAllMatches);
+          }
+        );
       return result;
+
     }
 
-    function splitTextContentByMatches(textContent, matches) {
-      var result = [textContent];
-
-      matches.forEach(function (match) {
-        result = splitTextContentListByMatch(result, match);
-      });
-
-      return result;
-    }
-
-    function splitTextContentListByMatch(textContents, match) {
-      var result = [];
-      textContents.forEach(function (textContent, index) {
-        if (textContent.indexOf(match) > -1) {
-          result.push.apply(result, insertItemBetweenEachElementOfArray(textContent.split(match), match));
-        } else result.push(textContent);
-      });
-      return result;
-    }
-
-    return result;
   }
 
   function stringToDOMNodes(str) {
-    return (new DOMParser()).parseFromString(str, 'text/html').body.childNodes;
+    return Array.from((new DOMParser()).parseFromString(str, 'text/html').body.childNodes);
   }
 
   function syncAllPathsToView(component) {
@@ -350,18 +366,28 @@
     component.__bindings__[path] = component.__bindings__[path] || [];
   }
 
-  function traverseDOM(node, callback) { // credit: http://www.javascriptcookbook.com/article/Traversing-DOM-subtrees-with-a-recursive-walk-the-DOM-function/
-    callback(node);
-    node = node.firstChild;
-    while (node) {
-      traverseDOM(node, callback);
-      node = node.nextSibling;
-    }
-  }
+  function traverseNodeAndDo(pointer, callback) { // inspiration: http://www.javascriptcookbook.com/article/Traversing-DOM-subtrees-with-a-recursive-walk-the-DOM-function/
+    callback(pointer);
 
-  function validate(component) {
-    if (!component.target || !document.querySelector(component.target)) throw TypeError('Components must have a valid target');
-    if (typeof component.data != 'object') throw TypeError('Components must have a valid target');
+    pointer = pointer.firstChild;
+    while (pointer) {
+      if (pointer.nodeName === '#text') {
+        var splitArray = splitTextNodeByTemplates(pointer);
+        if (Array.isArray(splitArray)) {
+          splitArray.forEach(
+            pipe(
+              callback,
+              function (node) {
+                pointer.parentNode.insertBefore(node, pointer);
+              }
+            )
+          );
+          pointer = pointer.previousSibling;
+          pointer.parentNode.removeChild(pointer.nextSibling);
+        }
+      } else traverseNodeAndDo(pointer, callback);
+      pointer = pointer.nextSibling;
+    }
   }
 
   function proxyfull(original, handler, logger, basePath) {

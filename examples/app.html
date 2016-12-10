@@ -7,17 +7,12 @@
     </thead>
     <tbody>
         <tr>
-            <td>(none)</td>
-            <td>
-                <p><input type="text" class="form-control"></p>
-                <p><span class="label label-info">BINDING</span> Not linked to any component data at all</p>
-            </td>
-        </tr>
-        <tr>
             <td><code>name</code></td>
             <td>
                 <p><input type="text" name="name" class="form-control" bind></p>
+                <!--you can enable two-way data binding on one specific form element by adding a `bind` attribute-->
                 <p><span class="label label-primary">VALUE</span> <samp>{{ name }}</samp></p>
+                <!--you can output the model value as text by using moustache/double-brace templates: e.g. {{ variable_name }}-->
                 <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code>                    element by including the attribute <code>bind</code></p>
                 <p><span class="label label-info">WATCHER</span> Has a watcher function that intercerpts model updates and converts
                     them to UPPERCASE</p>
@@ -44,6 +39,7 @@
             <td><code>actor</code></td>
             <td>
                 <p><input type="checkbox" name="actor" class="form-control" no-bind></p>
+                <!--you can disable two-way data binding on a single form element ONLY by adding a `no-bind` attribute, in case you allowed it globally or even by the `bind` attribute-->
                 <p><span class="label label-primary">VALUE</span> <samp>{{ actor }}</samp></p>
                 <p><span class="label label-info">BINDING</span> Two-way binding enabled for elements bound to <code>actor</code>                    by setting <code>watchers: {actor: true }</code>, but disabled for this <code>&lt;input&gt;</code> element
                     by including the attribute <code>no-bind</code></p>

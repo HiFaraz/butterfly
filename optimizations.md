@@ -15,3 +15,8 @@ respond to changes in watcher (create another proxy, and a map of paths to actua
 catch new live values added by new root data object
 
 also work on contenteditable objects
+
+why is create running after the first synctoviews in mapbindings? >> because it needs access to the proxy for async. at least we sync the rest of the data right away
+
+run watchers and live values in parallel? consider
+run watchers and live values in web workers? consider
