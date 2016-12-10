@@ -116,7 +116,10 @@
         stringToDOMDocument,
         callback
       )(component.template);
-    else callback(document.querySelector(component.target).childNodes);
+    else pipe(
+      Array.from,
+      callback
+    )(document.querySelector(component.target).childNodes);
   }
 
   function createView(component) {
