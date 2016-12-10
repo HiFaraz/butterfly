@@ -20,3 +20,5 @@ why is create running after the first synctoviews in mapbindings? >> because it 
 
 run watchers and live values in parallel? consider
 run watchers and live values in web workers? consider
+
+name textbox cursor should not move then i release the mouse

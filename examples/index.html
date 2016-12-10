@@ -60,14 +60,14 @@
                 <strong>Define your component:</strong>
                 <pre class="prettyprint">var person = rudy( { target: '#app', data: { firstName: 'Micheal'} } );</pre>
                 <strong>Mix things up:</strong>
-                <pre class="prettyprint">person.data.firstName = 'George';</pre>
+                <pre class="prettyprint">person.firstName = 'George';</pre>
                 <p><small><a href="#top">(back to top)</a></small></p>
             </div>
             <div class="col-md-4">
                 <h2>Status</h2>
                 <p class="bg-warning">Rudy is in pre-release state.</p>
                 <p>It weighs ~ 2.2kb minified and gzipped.</p>
-                <p>Rudy relies on ECMAScript 2015 Proxy objects. A limited functionality polyfill is available <a href="https://github.com/GoogleChrome/proxy-polyfill">here</a>.</p>
+                <p>Rudy relies on ECMAScript 2015 Proxies. A limited functionality polyfill is available <a href="https://github.com/GoogleChrome/proxy-polyfill">here</a>.</p>
                 <p>There is a fully working demo below, and the demo source code is included in the bottom of the document.</p>
                 <p>The views below are dynamically generated. The view internals are not in the source HTML document.</p>
                 <p>Released under the MIT licence by <a href="https://github.com/HiFaraz">Faraz Syed</a>.</p>
@@ -91,7 +91,7 @@
                             <td>View model updates</td>
                             <td>
                                 <p>Write directly to a data object:</p>
-                                <p><code>component.data.property = newValue;</code></p>
+                                <p><code>component.property = newValue;</code></p>
                             </td>
                             <td>
                                 <dl>
@@ -130,14 +130,14 @@
                                         <p>
                                             Add two-way binding only to <code>address.city</code> through the component configuration:
                                         </p>
-                                        <p><code>watchers: { 'address.city' : true }</code></p>
+                                        <p><code>watch: { 'address.city' : true }</code></p>
                                     </dd>
                                     <dt>Two-way binding on the entire data model</dt>
                                     <dd>
                                         <p>
                                             Add two-way binding to the entire data model through the component configuration:
                                         </p>
-                                        <p><code>watchers: true</code></p>
+                                        <p><code>watch: true</code></p>
                                         <p>
                                             In this case, you can remove two-way binding to a specific form element through an
                                             <code>no-bind</code> attribute.
@@ -177,7 +177,7 @@
                                 <p>Call a function at the beginning of the component lifecycle by attaching it to the component:</p>
                                 <p><code>create: function() { }</code></p>
                                 <p>Call a function whenever the data model is updated or there is input on a watched form element:</p>
-                                <p><code>watchers: { 'address.city' : function(value, element) { } }</code></p>
+                                <p><code>watch: { 'address.city' : function(value, element) { } }</code></p>
                             </td>
                             <td>
                                 <p class="text-muted"><small>not applicable</small></p>

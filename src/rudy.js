@@ -187,7 +187,9 @@
     while (target.firstChild) {
       target.removeChild(target.firstChild);
     }
-    nodes.forEach(target.appendChild.bind(target));
+    var fragment = document.createDocumentFragment();
+    nodes.forEach(fragment.appendChild.bind(fragment));
+    target.appendChild(fragment);
   }
 
   function patchViewOnModelChange(...args) {
