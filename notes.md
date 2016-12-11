@@ -3,6 +3,10 @@ DONE two way data binding!!!!
 DONE don't pollute the namespace!
 DONE why is create running after the first synctoviews in mapbindings? >> because it needs access to the proxy for async. at least we sync the rest of the data right away
 DONE remove templateURL support - templates should be packed in production, so there should not be anything to go against that. Agree with Vue.js on this.
+DONE name textbox cursor should not move then i release the mouse, check if the watcher/binder has changed the value before pushing the update
+DONE when patching in bulk, don't compute live values for every patch!
+
+debounce DOM updates
 
 do I need a virtual dom??
 
@@ -18,5 +22,3 @@ also work on contenteditable objects
 
 run watchers and live values in parallel? consider
 run watchers and live values in web workers? consider
-
-name textbox cursor should not move then i release the mouse, check if the watcher/binder has changed the value before pushing the update 

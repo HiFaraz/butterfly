@@ -17,8 +17,11 @@
 
   'use strict';
 
-  function rudy(component) {
+  var renderStart;
 
+  function rudy(component) {
+    if (window.performance) renderStart = performance.now();
+    component.data = component.data || {};
     if (component.data.$) throw TypeError('Found $ as data property (reserved namespace)');
 
     component.__bindings = {}; // for each path, stores an array of functions to be run when the path is set
@@ -43,7 +46,7 @@
           touchBinding(component, node.getAttribute('name'));
           var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
           saveBinding(component, node.getAttribute('name'), function (value) {
-            node[attr] = value;
+            if (node[attr] != value) node[attr] = value;
           });
           setEventListenersOnFormElements(node, attr);
         }
@@ -54,7 +57,7 @@
           if (node.getAttribute('name')) {
             touchBinding(component, node.getAttribute('name'));
             saveBinding(component, node.getAttribute('name'), function (value) {
-              node.value = value;
+              if (node.value != value) node.value = value;
             });
             setEventListenersOnFormElements(node);
           }
@@ -65,7 +68,7 @@
         if (node.getAttribute('name')) {
           touchBinding(component, node.getAttribute('name'));
           saveBinding(component, node.getAttribute('name'), function (value) {
-            node.innerHTML = value;
+            if (node.innerHTML != value) node.innerHTML = value;
           });
           node.innerHTML = '';
         }
@@ -80,7 +83,7 @@
           }, ...events);
           else if (typeof watch === 'function') {
             setEventListenersOnElement(node, function () {
-              var value = watch(node[attribute], node);
+              var value = watch(node[attribute]);
               if (value) setPathValue(component.data, node.getAttribute('name'), value);
             }, ...events);
           }
@@ -100,7 +103,7 @@
   }
 
   function buildView(component) {
-    if (component.template) return stringToDOMDocument(component.template);
+    if (component.template) return stringToDOMDocument((component.template[0] === '#') ? document.querySelector(component.template).innerHTML : component.template);
     else return Array.from(document.querySelector(component.target).childNodes);
   }
 
@@ -110,7 +113,10 @@
       buildView,
       bindViewToViewModel,
       populateView,
-      mountViewToTarget
+      mountViewToTarget,
+      function () {
+        component.data.$renderTime = Math.ceil(performance.now() - renderStart);
+      }
     )(component);
 
     function bindViewToViewModel(doc) {
@@ -181,15 +187,17 @@
     if (args.length === 1) return _patch;
     return _patch(...(args.slice(1)));
 
-    function _patch(target, property, value, receiver, path) {
+    function _patch(target, property, value, receiver, path, bulk) {
+
+      // console.log('PATCH', component.target, path, value, bulk);
 
       // run watchers
       var watch = getPathValue(component.watch, path);
-      try {
-        if (typeof watch === 'function') value = watch(value, null) || value;
-      } catch (e) {}
+      if (typeof watch === 'function') tryUntilSuccess(function () {
+        value = watch(value) || value;
+      });
 
-      // get live value
+      // get computed value
       if (typeof value === 'function') value = value.call(Object.assign({}, component.__data));
 
       // only update if something actually wants the value
@@ -199,13 +207,14 @@
         });
       }
 
-      // update live values
-      if (component.__computed) component.__computed.forEach(function (path) {
-
+      // update computed values
+      if (!bulk && component.__computed) component.__computed.forEach(function (path) {
         // run watchers
         var value = (getPathValue(component.__data, path) || function () {}).bind(Object.assign({}, component.__data));
         var watch = getPathValue(component.watch, path);
-        if (typeof watch === 'function') value = watch(value, null) || value;
+        if (typeof watch === 'function') tryUntilSuccess(function () {
+          value = watch(value) || value;
+        });
 
         // get live value if still a function
         if (typeof value === 'function') value = value.call(Object.assign({}, component.__data));
@@ -252,16 +261,22 @@
     return Array.from((new DOMParser()).parseFromString(str, 'text/html').body.childNodes);
   }
 
-  function populateView(component) {
-    Object.keys(component.__bindings).forEach(function (path) {
-      populateViewForModelPath(component, path, patchViewOnModelChange(component));
-    });
-    return component;
+  function tryUntilSuccess(action, interval = 0, limit = Infinity) {
+    try {
+      action();
+    } catch (e) {
+      if (limit > 0) setTimeout(function () {
+        tryUntilSuccess(action, (interval || 1) * 2, limit - 1);
+      }, interval);
+    }
   }
 
-  function populateViewForModelPath(component, path, patch) {
-    var value = getPathValue(component.__data, path);
-    if (value) patch(null, null, value, null, path);
+  function populateView(component) {
+    Object.keys(component.__bindings).forEach(function (path) {
+      var value = getPathValue(component.data, path);
+      if (value) patchViewOnModelChange(component, null, null, value, null, path, true);
+    });
+    return component;
   }
 
   function proxyfull(original, handler, logger, basePath) {
