@@ -25,7 +25,9 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="#">Butterfly</a>
+                    <a class="navbar-brand" href="#">
+                        <img src="styles/butterfly-white.png" height="20">
+                    </a>
                 </div>
                 <div class="navbar-collapse collapse" id="bs-example-navbar-collapse-2" aria-expanded="false" style="height: 0.8px;">
                     <ul class="nav navbar-nav">
@@ -266,11 +268,14 @@ welcome.message = 'Hello World!';</code></pre>
                         <h3 class="panel-title">Another component</h3>
                     </div>
                     <div class="panel-body">
-                        <p id="friend" class="lead"></p>
+                        <p id="friend"></p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code>                            element by including the attribute <code>bind</code></p>
+                        <p><span class="label label-info">WATCHER</span> Has a watcher function that pushes data to the main
+                            component to the left in <code>#person</code>.</p>
+                    </div>
+                    <div class="panel-footer">
                         <p><span class="label label-primary">COMPONENT</span> This component is defined separately from the
                             component to the left.</p>
-                        <p><span class="label label-info">WATCHER</span> The demo component to the left has a watcher function
-                            that interacts with the <code>firstName</code> property of this component</p>
                     </div>
                 </div>
             </div>
@@ -307,7 +312,7 @@ welcome.message = 'Hello World!';</code></pre>
                         <!--you can enable two-way data binding on one specific form element by adding a `bind` attribute-->
                         <p><input type="text" name="firstName" class="form-control" bind></p>
                         <!--you can output the model value as text by using <value name=" variable_name ">-->
-                        <p><span class="label label-primary">VALUE</span> <samp><value name="firstname"></samp>
+                        <p><span class="label label-primary">VALUE</span> <samp><value name="firstName"></samp>
                         </p>
                         <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code> element by including the attribute <code>bind</code></p>
                         <p><span class="label label-info">WATCHER</span> Has a watcher function that interacts with another component
@@ -353,20 +358,18 @@ welcome.message = 'Hello World!';</code></pre>
                 <tr>
                     <td><code>address.country</code></td>
                     <td>
-                        <p><textarea name="address.country" class="form-control"></textarea></p>
+                        <p><textarea name="address.country" class="form-control" bind></textarea></p>
                         <p><span class="label label-primary">VALUE</span> <samp><value name="address.country"></samp></p>
-                        <p><span class="label label-info">BINDING</span> No two-way data binding applied</p>
-                        <p><span class="label label-info">WATCHER</span> Has a watcher function that creates a markdown preview below
-                            in <code>#preview</code></p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;textarea&gt;</code> element by including the attribute <code>bind</code></p>
+                        <p><span class="label label-info">WATCHER</span> Has a watcher function that creates a markdown preview in <code>#preview</code></p>
                     </td>
                 </tr>
                 <tr>
                     <td><code>email</code></td>
                     <td>
-                        <p><input type="text" name="email"></p>
-                        <p><span class="label label-primary">VALUE</span> <samp><value name="email"></samp></p>
-                        <p><span class="label label-info">BINDING</span> Two-way binding applied by watcher function</p>
-                        <p><span class="label label-info">WATCHER</span> Has a watcher function that intercepts model updates and converts them to lowercase</p>
+                        <p><input type="text" name="emailFn"></p>
+                        <p><span class="label label-primary">VALUE</span> <samp><value name="emailFn"></samp></p>
+                        <p><span class="label label-info">COMPUTATION</span> This is a computed value, presents the email address retreived from an AJAX call in lowercase.</p>
                     </td>
                 </tr>
                 <tr>
@@ -427,6 +430,9 @@ var person = butterfly(
 
                 // return a value to pass it to the model
                 return this.firstName + ' ' + this.lastName;
+            },
+            emailFn: function() {
+                if (this.email) return this.email.toLowerCase();
             }
         },
 
@@ -438,36 +444,14 @@ var person = butterfly(
             // setting to `true` tells Butterfly to enable two-way data-binding on all form elements
             actor: true,
 
-            // this function does not return anything to the form element. Instead it does another
-            // operation entirely. It reflects a Markdown preview in another <div> tag
+            // let's create a markdown preview of the result elsewhere in the document
             address: {
-                country: function(value, element) {
-                    document.getElementById('preview').innerHTML = marked(value, { sanitize: true });
-
-                    // instead of omitting the return statement, you can also explicitly return a falsy value
-                    // for example: `return false;` or `return null;` - these will not cause the form element
-                    // to update
-
+                country: function(newValue) {
+                    document.getElementById('preview').innerHTML = marked(newValue, { sanitize: true });
                 }
             },
 
-            age: true,
-
-            // watcher functions run BEFORE any data calculations or bindings happen (interception)
-            // you can use this to intercept asynchronous requests
-            email: function(value, element) {
-                
-                // whatever you return from here will be set in the model and view 
-                return value.toLowerCase();
-            },
-
-            // let's interact with another component
-            firstName: function(value, element) {
-
-                // you can interact with a totally different component with ordinary JavaScript
-                // this is the component below the markdown preview
-                friend.firstName = value;
-            }
+            age: true
         },
 
         // this function is called once before the first render
@@ -509,7 +493,14 @@ var friend = butterfly({
     data: {
         firstName: ''
     },
-    template: 'HELLO <value name="firstName"></value>!'
+    watch: {
+
+        // let's push the new value to another Butterfly component
+        firstName: function(newValue) {
+        person.firstName = newValue;
+        }
+    },
+    template: '<input type="text" name="firstName" class="form-control" bind>'
 });
 
 // this is a utility function to make an AJAX request. it's not part of Butterfly. we'll use it down below to bind the view to a server response

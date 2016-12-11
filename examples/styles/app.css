@@ -24,6 +24,10 @@ body {
     color: rgb(255, 255, 255);
 }
 
+.navbar-default .navbar-brand {
+    padding-top: 1.5rem;
+}
+
 pre,
 div>pre.prettyprint {
     border: none;

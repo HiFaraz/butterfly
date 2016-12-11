@@ -11,7 +11,7 @@
     module.exports = factory();
   } else {
     // Browser globals (root is window)
-    root.rudy = factory();
+    root.butterfly = factory();
   }
 }(this, function () {
 
@@ -19,7 +19,7 @@
 
   var renderStart;
 
-  function rudy(component) {
+  function butterfly(component) {
     if (window.performance) renderStart = performance.now();
     component.data = component.data || {};
     if (component.data.$) throw TypeError('Found $ as data property (reserved namespace)');
@@ -76,18 +76,11 @@
 
       function setEventListenersOnFormElements(node, attribute = 'value') {
         var events = ['onclick', 'onchange', 'onkeypress', 'oninput'];
-        var watch = getPathValue(component.watch, node.getAttribute('name'));
-        if (node.hasAttribute('no-bind') === false) {
-          if (component.watch === true || watch === true || (typeof watch !== 'function' && node.hasAttribute('bind'))) setEventListenersOnElement(node, function () {
-            setPathValue(component.data, node.getAttribute('name'), node[attribute]);
+        var watcher = getPathValue(component.watch, node.getAttribute('name'));
+        if ((node.hasAttribute('no-bind') === false) && (component.watch === true || watcher === true || node.hasAttribute('bind')))
+          setEventListenersOnElement(node, function () {
+            if (node[attribute] !== getPathValue(component.data, node.getAttribute('name'))) setPathValue(component.data, node.getAttribute('name'), node[attribute]);
           }, ...events);
-          else if (typeof watch === 'function') {
-            setEventListenersOnElement(node, function () {
-              var value = watch(node[attribute]);
-              if (value) setPathValue(component.data, node.getAttribute('name'), value);
-            }, ...events);
-          }
-        }
 
         function setEventListenersOnElement(node, handler, ...events) {
           events.forEach(function (e) {
@@ -182,6 +175,11 @@
     target.appendChild(fragment);
   }
 
+  function runWatcher(component, path, newValue) {
+    var watcher = getPathValue(component.watch, path);
+    if (typeof watcher === 'function') watcher.call(component.data, newValue, getPathValue(component.__data, path)); // TODO proxy the context to detect infinite loop conditions
+  }
+
   function patchViewOnModelChange(...args) {
     const component = args[0];
     if (args.length === 1) return _patch;
@@ -191,11 +189,7 @@
 
       // console.log('PATCH', component.target, path, value, bulk);
 
-      // run watchers
-      var watch = getPathValue(component.watch, path);
-      if (typeof watch === 'function') tryUntilSuccess(function () {
-        value = watch(value) || value;
-      });
+      if (!bulk) runWatcher(component, path, value);
 
       // get computed value
       if (typeof value === 'function') value = value.call(Object.assign({}, component.__data));
@@ -211,10 +205,7 @@
       if (!bulk && component.__computed) component.__computed.forEach(function (path) {
         // run watchers
         var value = (getPathValue(component.__data, path) || function () {}).bind(Object.assign({}, component.__data));
-        var watch = getPathValue(component.watch, path);
-        if (typeof watch === 'function') tryUntilSuccess(function () {
-          value = watch(value) || value;
-        });
+        runWatcher(component, path, value);
 
         // get live value if still a function
         if (typeof value === 'function') value = value.call(Object.assign({}, component.__data));
@@ -244,31 +235,19 @@
     component.__bindings[path].push(binder);
   }
 
-  function setPathValue(source, path, value) { // credit: http://stackoverflow.com/posts/18937118/revisions
+  function setPathValue(source, path, value) { // inspired by: http://stackoverflow.com/posts/18937118/revisions
     var pointer = source;
     var keys = path.split('.');
-    var length = keys.length;
-    for (var index = 0; index < length - 1; index++) {
-      var element = keys[index];
-      if (!pointer[element]) pointer[element] = {}
-      pointer = pointer[element];
-    }
+    keys.slice(0, -1).forEach(function (key) {
+      if (!pointer[key]) pointer[key] = {}
+      pointer = pointer[key];
+    });
 
-    pointer[keys[length - 1]] = value;
+    pointer[keys.slice(-1)] = value;
   }
 
   function stringToDOMDocument(str) {
     return Array.from((new DOMParser()).parseFromString(str, 'text/html').body.childNodes);
-  }
-
-  function tryUntilSuccess(action, interval = 0, limit = Infinity) {
-    try {
-      action();
-    } catch (e) {
-      if (limit > 0) setTimeout(function () {
-        tryUntilSuccess(action, (interval || 1) * 2, limit - 1);
-      }, interval);
-    }
   }
 
   function populateView(component) {
@@ -325,5 +304,5 @@
     }
   }
 
-  return rudy;
+  return butterfly;
 }));
