@@ -43,8 +43,7 @@
             </div>
         </nav>
         <div class="jumbotron" style="margin-top: 2rem;">
-            <h1 id="title">Render time:
-                <value name="renderTime"></value>ms. Weight: 1.9kb* </h1>
+            <h1 id="timer">Render time: {{ renderTime }} ms. Weight: 1.9kb*</h1>
             <p>Make simple, flexible, re-usable, social front-end components with Butterfly</p>
             <small>* current render time (reload to try again), min + gzip</small>
         </div>
@@ -65,7 +64,7 @@
                     <div class="panel-body">
                         <pre class="prettyprint"><code class="prettyprint">&lt;div id="welcome"&gt;
     &lt;input type="text" name="message" bind&gt;
-    &lt;value name="message"&gt;&lt;/value&gt;
+    {{ message }}
 &lt;/div&gt;</code></pre>
                     </div>
                     <div class="panel-footer">The <code>bind</code> attribute tells Butterfly to apply two-way data binding on this textbox. </div>
@@ -95,7 +94,7 @@ welcome.message = 'Hello World!';</code></pre>
                     </div>
                     <div class="panel-body" id="welcome">
                         <input type="text" name="message" bind class="form-control">
-                        <span class="help-block lead"><value name="message"></value></span>
+                        <span class="help-block lead"> {{ message }} </span>
                     </div>
                 </div>
                 <p><small><a href="#top">(back to top)</a></small></p>
@@ -306,7 +305,7 @@ welcome.message = 'Hello World!';</code></pre>
                     <td>
                         <!--you can enable two-way data binding on one specific form element by adding a `bind` attribute-->
                         <p><input type="text" name="firstName" class="form-control" bind></p>
-                        <!--you can output the model value as text by using <value name=" variable_name ">-->
+                        <!--you can also output the model value as text by using <value name=" variable_name ">-->
                         <p><span class="label label-primary">VALUE</span> <samp><value name="firstName"></samp>
                         </p>
                         <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code> element by including the attribute <code>bind</code></p>
@@ -318,7 +317,7 @@ welcome.message = 'Hello World!';</code></pre>
                     <td><code>lastName</code></td>
                     <td>
                         <p><input type="text" name="lastName" class="form-control" bind></p>
-                        <p><span class="label label-primary">VALUE</span> <samp><value name="lastName"></samp>
+                        <p><span class="label label-primary">VALUE</span> <samp> {{ lastName }} </samp>
                         </p>
                         <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code> element by including the attribute <code>bind</code></p>
                     </td>
@@ -326,7 +325,7 @@ welcome.message = 'Hello World!';</code></pre>
                 <tr>
                     <td><code>fullName</code></td>
                     <td>
-                        <p><input type="text" name="fullName" class="form-control"></p> <p><span class="label label-primary">VALUE</span> <samp><value name="fullName"></samp></p>
+                        <p><input type="text" name="fullName" class="form-control"></p> <p><span class="label label-primary">VALUE</span> <samp> {{ fullName }} </samp></p>
                         <p><span class="label label-info">COMPUTATION</span> This is a computed value, it will update on any model or
                             view updates</p>
                         <p><span class="label label-info">BINDING</span> No two-way data binding applied</p>
@@ -336,7 +335,7 @@ welcome.message = 'Hello World!';</code></pre>
                     <td><code>age</code></td>
                     <td>
                         <p><input type="range" name="age" class="form-control"></p>
-                        <p><span class="label label-primary">VALUE</span> <samp><value name="age"></samp></p>
+                        <p><span class="label label-primary">VALUE</span> <samp> {{ age }} </samp></p>
                         <p><span class="label label-info">BINDING</span> Two-way binding enabled for elements bound to <code>age</code> by setting <code>watchers: { age: true }</code></p>
                     </td>
                 </tr>
@@ -345,7 +344,7 @@ welcome.message = 'Hello World!';</code></pre>
                     <td>
                         <p><input type="checkbox" name="actor" class="form-control" no-bind></p>
                         <!--you can disable two-way data binding on a single form element ONLY by adding a `no-bind` attribute, in case you allowed it globally or even by the `bind` attribute-->
-                        <p><span class="label label-primary">VALUE</span> <samp><value name="actor"></samp></p>
+                        <p><span class="label label-primary">VALUE</span> <samp> {{ actor }} </samp></p>
                         <p><span class="label label-info">BINDING</span> Two-way binding enabled for elements bound to <code>actor</code> by setting <code>watchers: {actor: true }</code>, but disabled for this <code>&lt;input&gt;</code> element
                             by including the attribute <code>no-bind</code></p>
                     </td>
@@ -354,7 +353,7 @@ welcome.message = 'Hello World!';</code></pre>
                     <td><code>address.country</code></td>
                     <td>
                         <p><textarea name="address.country" class="form-control" bind></textarea></p>
-                        <p><span class="label label-primary">VALUE</span> <samp><value name="address.country"></samp></p>
+                        <p><span class="label label-primary">VALUE</span> <samp> {{ address.country }} </samp></p>
                         <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;textarea&gt;</code> element by including the attribute <code>bind</code></p>
                         <p><span class="label label-info">WATCHER</span> Has a watcher function that creates a markdown preview in <code>#preview</code></p>
                     </td>
@@ -363,7 +362,7 @@ welcome.message = 'Hello World!';</code></pre>
                     <td><code>email</code></td>
                     <td>
                         <p><input type="text" name="emailFn"></p>
-                        <p><span class="label label-primary">VALUE</span> <samp><value name="emailFn"></samp></p>
+                        <p><span class="label label-primary">VALUE</span> <samp> {{ emailFn }} </samp></p>
                         <p><span class="label label-info">COMPUTATION</span> This is a computed value, presents the email address retreived from an AJAX call in lowercase.</p>
                     </td>
                 </tr>
@@ -374,7 +373,7 @@ welcome.message = 'Hello World!';</code></pre>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
                                     </select></p>
-                        <p><span class="label label-primary">VALUE</span> <samp><value name="gender"></samp></p>
+                        <p><span class="label label-primary">VALUE</span> <samp> {{ gender }} </samp></p>
                         <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;select&gt;</code> element by including the attribute <code>bind</code></p>
                     </td>
                 </tr>
@@ -473,7 +472,7 @@ var person = butterfly(
         mounted: function() {
 
             // here's the code for the rendering time measurement in the title
-            butterfly( { target: '#title', data: { renderTime: (Math.ceil(performance.now() - renderStart)) } } );
+            butterfly( { target: '#timer', data: { renderTime: (Math.ceil(performance.now() - renderStart)) } } );
         },
         // you can also specify a template as a string. this will override whatever is already in the target element
         template: '#person-template'

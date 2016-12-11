@@ -71,6 +71,18 @@
         }
       };
 
+      typeTable['#text'] = function textNodes(node) {
+        var matches = node.textContent.match(/{{(.+?)}}/g);
+        if (matches) {
+          var path = matches[0].replace(/[{}]/g, '').trim();
+          touchBinding(component, path);
+          saveBinding(component, path, function (value) {
+            node.nodeValue = value;
+          });
+          node.textContent = '';
+        }
+      };
+
       function setEventListenersOnFormElements(node, attribute = 'value') {
         var events = ['onclick', 'onchange', 'onkeypress', 'oninput'];
         var watcher = getPathValue(component.watch, node.getAttribute('name'));
@@ -107,10 +119,10 @@
     )(component);
 
     function bindViewToViewModel(doc) {
-      doc.forEach(function (node) {
-        traverseDOM(node, buildBinding(component));
-      });
-      dom = doc;
+      dom = doc.reduce(function (collection, node) {
+        if (node.nodeName === '#text') return collection.concat(splitTextNodeByTemplates(node, buildBinding(component)));
+        else return collection.concat(traverseDOM(node, buildBinding(component)));
+      }, []);
       return component;
     }
 
@@ -137,6 +149,15 @@
         if (typeof initial === 'undefined') return undefined;
         else return initial[key];
       }, source);
+  }
+
+  function insertItemBetweenEachElementOfArray(targetArray, item) {
+    var result = [];
+    targetArray.forEach(function (element) {
+      result.push(element, item);
+    })
+    result.pop();
+    return result;
   }
 
   function JSONPath(basePath, property) {
@@ -208,27 +229,6 @@
     };
   }
 
-  function saveBinding(component, path, binder) {
-    var value = getPathValue(component.data, path);
-    if (typeof value === 'function' && component.__computed.indexOf(path) === -1) component.__computed.push(path);
-    component.__bindings[path].push(binder);
-  }
-
-  function setPathValue(source, path, value) { // inspired by: http://stackoverflow.com/posts/18937118/revisions
-    var pointer = source;
-    var keys = path.split('.');
-    keys.slice(0, -1).forEach(function (key) {
-      if (!pointer[key]) pointer[key] = {}
-      pointer = pointer[key];
-    });
-
-    pointer[keys.slice(-1)] = value;
-  }
-
-  function stringToDOMDocument(str) {
-    return Array.from((new DOMParser()).parseFromString(str, 'text/html').body.childNodes);
-  }
-
   function populateView(component) {
     Object.keys(component.__bindings).forEach(function (path) {
       var value = getPathValue(component.data, path);
@@ -269,6 +269,78 @@
 
   }
 
+  function saveBinding(component, path, binder) {
+    var value = getPathValue(component.data, path);
+    if (typeof value === 'function' && component.__computed.indexOf(path) === -1) component.__computed.push(path);
+    component.__bindings[path].push(binder);
+  }
+
+  function setPathValue(source, path, value) { // inspired by: http://stackoverflow.com/posts/18937118/revisions
+    var pointer = source;
+    var keys = path.split('.');
+    keys.slice(0, -1).forEach(function (key) {
+      if (!pointer[key]) pointer[key] = {}
+      pointer = pointer[key];
+    });
+
+    pointer[keys.slice(-1)] = value;
+  }
+
+  function splitTextNodeByTemplates(node, callback) {
+    var splitArray = splitTextNodeByTemplatesIntoArray(node);
+    if (Array.isArray(splitArray)) {
+      splitArray.forEach(
+        pipe(
+          callback,
+          function (newNode) {
+            node.parentNode.insertBefore(newNode, node);
+          }
+        )
+      );
+      node.parentNode.removeChild(node);
+      return splitArray;
+    } else {
+      callback(node);
+      return node;
+    }
+  }
+
+  function splitTextNodeByTemplatesIntoArray(node) {
+
+    var matches = node.textContent.match(/{{(.+?)}}/g);
+    if (matches) return splitNodeTextContentByMatchesAndCreateTextNodes(node, matches);
+    return node; // keep as is: does not have template strings
+
+    function splitNodeTextContentByMatchesAndCreateTextNodes(node, matches) {
+
+      var result = matches
+        .reduce(
+          function (arrayOfTextToSplitByAllMatches, match) {
+
+            return arrayOfTextToSplitByAllMatches
+              .reduce(
+                function (arrayOfTextAlreadySplitByMatch, textToSplitByMatch) {
+                  return (textToSplitByMatch.indexOf(match) === -1 || textToSplitByMatch === match) ? arrayOfTextAlreadySplitByMatch.concat(textToSplitByMatch) : arrayOfTextAlreadySplitByMatch.concat(insertItemBetweenEachElementOfArray(textToSplitByMatch.split(match), match));
+                }, []
+              );
+
+          }, [node.textContent]
+        )
+        .map(
+          function (textValueAfterSplittingByAllMatches) {
+            return document.createTextNode(textValueAfterSplittingByAllMatches);
+          }
+        );
+      return result;
+
+    }
+
+  }
+
+  function stringToDOMDocument(str) {
+    return Array.from((new DOMParser()).parseFromString(str, 'text/html').body.childNodes);
+  }
+
   function touchBinding(component, path) {
     component.__bindings[path] = component.__bindings[path] || [];
   }
@@ -276,11 +348,14 @@
   function traverseDOM(pointer, callback) { // inspiration: http://www.javascriptcookbook.com/article/Traversing-DOM-subtrees-with-a-recursive-walk-the-DOM-function/
     callback(pointer);
 
-    pointer = pointer.firstChild;
-    while (pointer) {
-      traverseDOM(pointer, callback);
-      pointer = pointer.nextSibling;
+    var child = pointer.firstChild;
+    while (child) {
+      if (child.nodeName === '#text') splitTextNodeByTemplates(child, callback);
+      else traverseDOM(child, callback);
+      child = child.nextSibling;
     }
+
+    return pointer;
   }
 
   return butterfly;
