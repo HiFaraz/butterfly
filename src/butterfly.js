@@ -179,7 +179,7 @@
   }
 
   function JSONPath(basePath, property) {
-    return (basePath + '.' + property)
+    return (basePath + ((property) ? ('.' + property) : ''))
       .match(/[^\.].*/)[0];
   }
 
