@@ -252,30 +252,29 @@
     return component;
   }
 
-  function proxyfull(original, handler, logger, basePath) {
+  function proxyfull(original, handler, logger, basePath, isArray = false) {
 
     // if (typeof original !== 'object') throw TypeError('Cannot create proxy with a non-object as target');
     // if (typeof handler !== 'object') throw TypeError('Cannot create proxy with a non-object as handler');
 
     if (typeof basePath === 'undefined') basePath = '';
-    var _target = Object.assign({}, original);
+    var _target = (isArray) ? original : Object.assign({}, original);
 
-    Object.keys(_target)
+    if (!isArray) Object.keys(_target) // TODO reconsider if I want to track changes within a list of items
       .forEach(function (key) {
-        if (typeof _target[key] === 'object' && !Array.isArray(_target[key])) {
-          _target[key] = proxyfull(_target[key], handler, logger, basePath + '.' + key);
-        }
+        if (typeof _target[key] === 'object') _target[key] = proxyfull(_target[key], handler, logger, basePath + '.' + key, Array.isArray(_target[key]));
       });
 
     const _handler = Object.assign({}, handler, {
       set: function (target, property, value, receiver) {
 
-        if (typeof value === 'object' && !Array.isArray(value)) Reflect.set(target, property, proxyfull(value, handler, logger, JSONPath(basePath, property)));
+        if (!isArray && typeof value === 'object' && !Array.isArray(value)) Reflect.set(target, property, proxyfull(value, handler, logger, JSONPath(basePath, property)));
         else Reflect.set(target, property, value);
 
         Reflect.set(original, property, value);
 
-        if (handler.set) return handler.set(target, property, value, receiver, JSONPath(basePath, property));
+        var path = (isArray) ? JSONPath(basePath) : JSONPath(basePath, property);
+        if (handler.set) return handler.set(target, property, (isArray) ? target : value, receiver, path);
         else return true;
       }
     });
