@@ -76,11 +76,13 @@
         var matches = node.textContent.match(/{{(.+?)}}/g);
         if (matches) {
           var path = matches[0].replace(/[{}]/g, '').trim();
-          touchBinding(component, path);
-          saveBinding(component, path, function (value) {
-            node.nodeValue = value;
-          });
-          node.textContent = '';
+          if (path.slice(0, 11) !== 'constructor' && path.indexOf('.constructor') === -1) { // check for XSS attack by trying to access constructors
+            touchBinding(component, path);
+            saveBinding(component, path, function (value) {
+              node.nodeValue = value;
+            });
+            node.textContent = '';
+          }
         }
       };
 
