@@ -94,7 +94,7 @@
 
   function buildView(component) {
     if (component.template) return stringToDOMDocument((component.template[0] === '#') ? document.querySelector(component.template).innerHTML : component.template);
-    else return Array.from(document.querySelector(component.target).childNodes);
+    else return Array.from(document.getElementById(component.target.slice(1)).childNodes);
   }
 
   function createView(component) {
@@ -130,22 +130,6 @@
     if (typeof component.created === 'function') component.created.call(component.data);
   }
 
-  function getTemplateFromURL(url, callback) {
-    console.time('getTemplateFromURL');
-    var request = new XMLHttpRequest();
-    request.open('GET', url, true);
-    request.onload = function () {
-      console.timeEnd('getTemplateFromURL');
-      if (request.readyState != 4 || request.status != 200) callback(true);
-      else callback(null, request.responseText);
-    };
-    try {
-      request.send();
-    } catch (error) {
-      callback(error);
-    }
-  }
-
   function getPathValue(source, path) {
     return path
       .split('.')
@@ -161,7 +145,7 @@
   }
 
   function mountNodesToTarget(component, nodes) {
-    var target = document.querySelector(component.target);
+    var target = document.getElementById(component.target.slice(1));
     while (target.firstChild) {
       target.removeChild(target.firstChild);
     }
