@@ -136,10 +136,14 @@
     component.__data = Object.assign({}, component.data);
 
     component.data = new proxyfull(component.__data, {
-      set: patchViewOnModelChange(component)
+      set: function (target, property, value, receiver, path) {
+        var result = patchViewOnModelChange(component).apply(this, arguments);
+        if (component.updated) component.updated.call(component.data, path, value);
+        return result;
+      }
     });
 
-    if (typeof component.created === 'function') component.created.call(component.data);
+    if (component.created) component.created.call(component.data);
   }
 
   function getPathValue(source, path) {
@@ -189,7 +193,7 @@
       if (!bulk) runWatcher(component, path, value);
 
       // get computed value
-      if (typeof value === 'function') value = value.call(Object.assign({}, component.__data));
+      if (typeof value === 'function') value = value.call(component.data);
 
       // only update if something actually wants the value
       if (component.__bindings[path]) {
@@ -201,11 +205,8 @@
       // update computed values
       if (!bulk && component.__computed) component.__computed.forEach(function (path) {
         // run watchers
-        var value = (getPathValue(component.__data, path) || function () {}).bind(Object.assign({}, component.__data));
+        var value = (getPathValue(component.__data, path) || function () {}).call(component.__data);
         runWatcher(component, path, value);
-
-        // get live value if still a function
-        if (typeof value === 'function') value = value.call(Object.assign({}, component.__data));
 
         // apply bindings
         component.__bindings[path].forEach(function (binder) {

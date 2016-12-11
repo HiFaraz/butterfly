@@ -44,7 +44,7 @@
         </nav>
         <div class="jumbotron" style="margin-top: 2rem;">
             <h1 id="timer">Render time: {{ renderTime }} ms. Weight: 1.94kb*</h1>
-            <p>Make simple, flexible, re-usable, social front-end components with Butterfly</p>
+            <p>Simple, fast, and light-weight web interfaces with Butterfly</p>
             <small>* current render time (reload to try again), min + gzip</small>
         </div>
         <div class="row">
@@ -266,6 +266,18 @@ welcome.message = 'Hello World!';</code></pre>
                             component to the left.</p>
                     </div>
                 </div>
+                <div class="panel panel-default ">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Update history</h3>
+                    </div>
+                    <div id="person-history" class="panel-body">
+                        {{ store }}
+                    </div>
+                    <div class="panel-footer">
+                        <p><span class="label label-primary">COMPONENT</span> The component to the left writes to this component
+                            whenever there is a data change event.</p>
+                    </div>
+                </div>
             </div>
         </div>
         <p><small><a href="#top">(back to top)</a></small></p>
@@ -280,6 +292,23 @@ welcome.message = 'Hello World!';</code></pre>
             <div class="col-lg-12">
                 <pre id="codeView" class="prettyprint"></pre>
                 <p><small><a href="#top">(back to top)</a></small></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="page-header">
+                    <h1 id="roadmap">Roadmap for further development</h1>
+                </div>
+                <p class="lead">Butterfly is far from complete ...</p>
+                <p>Butterfly is blazingly fast and light for basic data-binding and manipulation, yet it needs more to be considered
+                    a full-powered library for making web apps:</p>
+                <ul>
+                    <li>A list rendering system</li>
+                    <li>Component methods</li>
+                    <li>Event handlers within templates (e.g. button clicks)</li>
+                    <li>Element class manipulation</li>
+                    <li>Custom HTML tags?</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -387,7 +416,24 @@ welcome.message = 'Hello World!';</code></pre>
 var welcome = butterfly( { target: '#welcome', data: { message: ''} } );
 welcome.message = 'Hello World!';
 
-// before we create the main component, let's start measuring how long it takes to render from scratch!
+
+// before we begin, we're going to create a component that will store data update history from the main component through a lifecycle hook later on
+var personHistory = butterfly({
+    target: '#person-history',
+    data: {
+        store: []
+    }
+});
+
+// we're also going to create component to display the rendering time in the page header. We'll call this from a lifecycle hook later on
+var timer = butterfly({
+    target: '#timer',
+    data: {
+        renderTime: ''
+    }
+});
+
+// let's start measuring how long it takes to render the main component!
 var renderStart = performance.now();
 
 // let's go! all you have to do is send an object to butterfly.
@@ -409,9 +455,13 @@ var person = butterfly(
                 country: 'Canada'
             },
             actor: true,
+        // },
 
-            // your data can be functions! this function is called everytime
-            // new data is bound to the view, including the initialization.
+        // you can have computed values too! These will overwrite any data values with the same name though, so be careful in naming them!
+        // these functions are called for each view update, including the initialization
+        // the context is bound to the component data, computed values, and methods
+        // computed: {
+            
             // all values passed to `this` are read-only and changing them 
             // will not affect the view nor model
 
@@ -472,7 +522,14 @@ var person = butterfly(
         mounted: function() {
 
             // here's the code for the rendering time measurement in the title
-            butterfly( { target: '#timer', data: { renderTime: (Math.ceil(performance.now() - renderStart)) } } );
+            timer.renderTime = (Math.ceil(performance.now() - renderStart));
+        },
+
+        //this function is called whenever a data value changes
+        updated: function(path, value) {
+            
+            // let's update that history component we talked about. we're going to add to it as if it was just a regular part of our data model!
+            personHistory.store = personHistory.store + `${path} set to ${value}, `;
         },
         // you can also specify a template as a string. this will override whatever is already in the target element
         template: '#person-template'
