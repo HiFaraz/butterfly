@@ -322,7 +322,7 @@ welcome.message = 'Hello World!';</code></pre>
     <script src="/js/butterfly.js"></script>
     <script id="person-template" type="text/x-template">
         <table class="table table-responsive table-striped table-hover">
-            <thead>
+            <thead >
                 <tr>
                     <th>Variable</td>
                         <th>View(s)</td>
@@ -398,10 +398,12 @@ welcome.message = 'Hello World!';</code></pre>
                 <tr>
                     <td><code>gender</code></td>
                     <td>
-                        <p><select name="gender" class="form-control" bind>
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                    </select></p>
+                        <p>
+                            <select name="gender" class="form-control" bind>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </p>
                         <p><span class="label label-primary">VALUE</span> <samp> {{ gender }} </samp></p>
                         <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;select&gt;</code> element by including the attribute <code>bind</code></p>
                         <p><span class="label label-info">WATCHER</span> Has a watcher function that runs the <code>introduce</code> method, which adds the introduction text below</p>
@@ -409,6 +411,15 @@ welcome.message = 'Hello World!';</code></pre>
                             <p id="person-introduction"></p>
                             <small> {{ fullName }} </small>
                         </blockquote>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>friends</code></td>
+                    <td>
+                        <p>
+                            <list name="friends"><p><span class="label label-primary">VALUE</span> <samp> {{ $value }} </samp></p></list>
+                        </p>
+                        <p>This is a list of friends</p>
                     </td>
                 </tr>
             </tbody>
@@ -459,7 +470,8 @@ var person = butterfly(
             address: {
                 country: 'Canada'
             },
-            actor: true
+            actor: true,
+            friends: ['Emma', 'David', 'Jack']
         },
 
         // you can have computed values too! These will overwrite any data values with the same name though, so be careful in naming them!

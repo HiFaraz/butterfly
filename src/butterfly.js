@@ -31,16 +31,17 @@
     return component.data;
   }
 
-  function buildBinding(component, node) {
+  function buildBinding(component, node, scope) {
 
     if (typeof node === 'undefined') return _buildBinding;
-    else _buildBinding(node);
+    else _buildBinding(node, scope);
 
-    function _buildBinding(node) {
+    function _buildBinding(node, scope) {
+      if (scope) console.log(node, scope)
       var typeTable = {};
 
       typeTable.INPUT = function inputElements(node) {
-        if (node.getAttribute('name')) {
+        if (node.getAttribute('name') && isSafePath(node.getAttribute('name'))) {
           touchBinding(component, node.getAttribute('name'));
           var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
           saveBinding(component, node.getAttribute('name'), function (value) {
@@ -52,7 +53,7 @@
 
       ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
         typeTable[type] = function otherFormElements(node) {
-          if (node.getAttribute('name')) {
+          if (node.getAttribute('name') && isSafePath(node.getAttribute('name'))) {
             touchBinding(component, node.getAttribute('name'));
             saveBinding(component, node.getAttribute('name'), function (value) {
               if (node.value != value) node.value = value;
@@ -62,8 +63,12 @@
         };
       });
 
+      typeTable.LIST = function list(node) {
+        if (node.getAttribute('name') && isSafePath(node.getAttribute('name'))) {}
+      }
+
       typeTable.VALUE = function inputElements(node) {
-        if (node.getAttribute('name')) {
+        if (node.getAttribute('name') && isSafePath(node.getAttribute('name'))) {
           touchBinding(component, node.getAttribute('name'));
           saveBinding(component, node.getAttribute('name'), function (value) {
             if (node.innerHTML != value) node.innerHTML = value;
@@ -72,11 +77,15 @@
         }
       };
 
+
+
+      // faraz
+
       typeTable['#text'] = function textNodes(node) {
         var matches = node.textContent.match(/{{(.+?)}}/g);
         if (matches) {
           var path = matches[0].replace(/[{}]/g, '').trim();
-          if (path.slice(0, 11) !== 'constructor' && path.indexOf('.constructor') === -1) { // check for XSS attack by trying to access constructors
+          if (isSafePath(path)) {
             touchBinding(component, path);
             saveBinding(component, path, function (value) {
               node.nodeValue = value;
@@ -123,8 +132,9 @@
 
     function bindViewToViewModel(doc) {
       dom = doc.reduce(function (collection, node) {
-        if (node.nodeName === '#text') return collection.concat(splitTextNodeByTemplates(node, buildBinding(component)));
-        else return collection.concat(traverseDOM(node, buildBinding(component)));
+        var scope = (node.getAttribute && node.getAttribute('name')) ? (node.getAttribute('name') || '') : ''
+        if (node.nodeName === '#text') return collection.concat(splitTextNodeByTemplates(node, buildBinding(component), scope));
+        else return collection.concat(traverseDOM(node, buildBinding(component), scope));
       }, []);
       return component;
     }
@@ -162,6 +172,10 @@
     return targetArray.reduce(function (result, element) {
       return result.concat(element, item);
     }, []).slice(0, -1);
+  }
+
+  function isSafePath(path) {
+    return (path.slice(0, 11) !== 'constructor' && path.indexOf('.constructor') === -1); // check for XSS attack by trying to access constructors
   }
 
   function JSONPath(basePath, property) {
@@ -287,21 +301,21 @@
     pointer[keys.slice(-1)] = value;
   }
 
-  function splitTextNodeByTemplates(node, callback) {
+  function splitTextNodeByTemplates(node, callback, scope) {
     var splitArray = splitTextNodeByTemplatesIntoArray(node);
     if (Array.isArray(splitArray)) {
-      splitArray.forEach(
+      splitArray.forEach(function (newNode) {
         pipe(
           callback,
           function (newNode) {
             node.parentNode.insertBefore(newNode, node);
           }
-        )
-      );
+        )(newNode, scope);
+      });
       node.parentNode.removeChild(node);
       return splitArray;
     } else {
-      callback(node);
+      callback(node, scope);
       return node;
     }
   }
@@ -346,13 +360,13 @@
     component.__bindings[path] = component.__bindings[path] || [];
   }
 
-  function traverseDOM(pointer, callback) { // inspiration: http://www.javascriptcookbook.com/article/Traversing-DOM-subtrees-with-a-recursive-walk-the-DOM-function/
-    callback(pointer);
+  function traverseDOM(pointer, callback, scope = '') { // inspiration: http://www.javascriptcookbook.com/article/Traversing-DOM-subtrees-with-a-recursive-walk-the-DOM-function/
+    callback(pointer, scope);
 
     var child = pointer.firstChild;
     while (child) {
-      if (child.nodeName === '#text') splitTextNodeByTemplates(child, callback);
-      else traverseDOM(child, callback);
+      if (child.nodeName === '#text') splitTextNodeByTemplates(child, callback, scope.concat((child.getAttribute && child.getAttribute('name')) ? (((scope !== '') ? '.' : '').concat(child.getAttribute('name'))) : ''));
+      else traverseDOM(child, callback, scope.concat((child.getAttribute && child.getAttribute('name')) ? (((scope !== '') ? '.' : '').concat(child.getAttribute('name'))) : ''));
       child = child.nextSibling;
     }
 
