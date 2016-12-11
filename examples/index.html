@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>Butterfly | Fast, simple, flexible front-end components</title>
+    <title>Build fast, simple, and light-weight front-end apps with Butterfly</title>
     <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w="
         crossorigin="anonymous" />-->
     <link rel="stylesheet" href="https://bootswatch.com/cosmo/bootstrap.min.css" crossorigin="anonymous" />
@@ -43,8 +43,8 @@
             </div>
         </nav>
         <div class="jumbotron" style="margin-top: 2rem;">
-            <h1 id="title">Render views in under
-                <value name="renderTime"></value>ms for 1.9kb* </h1>
+            <h1 id="title">Render time:
+                <value name="renderTime"></value>ms. Weight: 1.9kb* </h1>
             <p>Make simple, flexible, re-usable, social front-end components with Butterfly</p>
             <small>* current render time (reload to try again), min + gzip</small>
         </div>
@@ -213,20 +213,9 @@ welcome.message = 'Hello World!';</code></pre>
                                 </dl>
                             </td>
                         </tr>
-                        <tr>
-                            <td>Constructors and watchers</td>
-                            <td>
-                                <p>Call a function at the beginning of the component lifecycle by attaching it to the component:</p>
-                                <p><code>create: function() { }</code></p>
-                                <p>Call a function whenever the data model is updated or there is input on a watched form element:</p>
-                                <p><code>watch: { 'address.city' : function(value, element) { } }</code></p>
-                            </td>
-                            <td>
-                                <p class="text-muted"><small>not applicable</small></p>
-                            </td>
-                        </tr>
                     </tbody>
                 </table>
+                <p>Butterfly also features: computed values, methods (in progress), and lifecycle hooks (created, mounted)</p>
                 <p><small><a href="#top">(back to top)</a></small></p>
             </div>
             <div class="col-md-3">
@@ -295,6 +284,12 @@ welcome.message = 'Hello World!';</code></pre>
             </div>
         </div>
     </div>
+    <footer class="footer">
+        <div class="container">
+            Built with love by <a href="https://github.com/HiFaraz">Faraz Syed</a>. Contact him at <a href="mailto:hello@farazsyed.com">hello@farazsyed.com</a>.
+            Butterfly code is released under the MIT licence.
+        </div>
+    </footer>
     <script src="https://unpkg.com/marked@0.3.6"></script>
     <script src="/js/butterfly.js"></script>
     <script id="person-template" type="text/x-template">
@@ -393,6 +388,9 @@ welcome.message = 'Hello World!';</code></pre>
 var welcome = butterfly( { target: '#welcome', data: { message: ''} } );
 welcome.message = 'Hello World!';
 
+// before we create the main component, let's start measuring how long it takes to render from scratch!
+var renderStart = performance.now();
+
 // let's go! all you have to do is send an object to butterfly.
 // hang on to the returned object btw, you can do stuff with it later
 var person = butterfly(
@@ -454,8 +452,8 @@ var person = butterfly(
             age: true
         },
 
-        // this function is called once before the first render
-        create: function() {
+        // this function is called once before the first render, when the view model is created
+        created: function() {
 
             var vm = this;
             vm.name = 'James';
@@ -470,13 +468,18 @@ var person = butterfly(
                     vm.email = body.email;
                 });
         },
+
+        // this function is called after the first render, when the view has been mounted to the DOM
+        mounted: function() {
+
+            // here's the code for the rendering time measurement in the title
+            butterfly( { target: '#title', data: { renderTime: (Math.ceil(performance.now() - renderStart)) } } );
+        },
         // you can also specify a template as a string. this will override whatever is already in the target element
         template: '#person-template'
     }
 );
 
-// here's the code for the rendering time measurement in the title
-butterfly( { target: '#title', data: { renderTime: person.$renderTime } } );
 
 // you don't need to be inside your component object to update the data. let's change an existing value
 person.firstName = 'Maria';

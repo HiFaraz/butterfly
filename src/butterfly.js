@@ -17,12 +17,9 @@
 
   'use strict';
 
-  var renderStart;
-
   function butterfly(component) {
-    if (window.performance) renderStart = performance.now();
     component.data = component.data || {};
-    if (component.data.$) throw TypeError('Found $ as data property (reserved namespace)');
+    // if (component.data.$) throw TypeError('Found $ as data property (reserved namespace)');
 
     component.__bindings = {}; // for each path, stores an array of functions to be run when the path is set
     component.__computed = []; // array of paths with computed values
@@ -106,10 +103,7 @@
       buildView,
       bindViewToViewModel,
       populateView,
-      mountViewToTarget,
-      function () {
-        component.data.$renderTime = Math.ceil(performance.now() - renderStart);
-      }
+      mountViewToTarget
     )(component);
 
     function bindViewToViewModel(doc) {
@@ -122,6 +116,7 @@
 
     function mountViewToTarget(component) {
       mountNodesToTarget(component, dom);
+      if (component.mounted) component.mounted.call(component.data);
     }
   }
 
@@ -132,7 +127,7 @@
       set: patchViewOnModelChange(component)
     });
 
-    if (typeof component.create === 'function') component.create.call(component.data);
+    if (typeof component.created === 'function') component.created.call(component.data);
   }
 
   function getTemplateFromURL(url, callback) {
@@ -260,8 +255,8 @@
 
   function proxyfull(original, handler, logger, basePath) {
 
-    if (typeof original !== 'object') throw TypeError('Cannot create proxy with a non-object as target');
-    if (typeof handler !== 'object') throw TypeError('Cannot create proxy with a non-object as handler');
+    // if (typeof original !== 'object') throw TypeError('Cannot create proxy with a non-object as target');
+    // if (typeof handler !== 'object') throw TypeError('Cannot create proxy with a non-object as handler');
 
     if (typeof basePath === 'undefined') basePath = '';
     var _target = Object.assign({}, original);
