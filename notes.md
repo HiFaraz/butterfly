@@ -22,3 +22,5 @@ also work on contenteditable objects
 
 run watchers and live values in parallel? consider
 run watchers and live values in web workers? consider
+
+figure out how to record watcher deps, so that I only run them when a dep changes

@@ -1,7 +1,22 @@
-.navbar-default {
-    background-color: rgb(60, 115, 120);
+body {
+    min-height: 2000px;
+    padding-top: 70px;
+    background: url('ps_neutral_@2X.png')
 }
 
+.container {
+    background-color: white;
+}
+
+.navbar-default {
+    background-color: white;
+}
+
+.navbar-default .navbar-nav>li>a {
+    color: rgb(60, 115, 120);
+}
+
+.navbar-default .navbar-brand,
 .navbar-default .navbar-nav>li>a:hover,
 .navbar-default .navbar-nav>li>a:focus,
 .jumbotron {

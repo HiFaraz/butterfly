@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>Rudy | Fast, simple, flexible front-end components</title>
+    <title>Butterfly | Fast, simple, flexible front-end components</title>
     <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w="
         crossorigin="anonymous" />-->
     <link rel="stylesheet" href="https://bootswatch.com/cosmo/bootstrap.min.css" crossorigin="anonymous" />
@@ -15,8 +15,8 @@
 
 <body>
     <div id="top" class="container">
-        <nav class="navbar navbar-default" role="navigation">
-            <div class="container-fluid">
+        <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
                 <div class="navbar-header">
                     <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-2"
                         aria-expanded="false">
@@ -25,7 +25,7 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="#">Rudy</a>
+                    <a class="navbar-brand" href="#">Butterfly</a>
                 </div>
                 <div class="navbar-collapse collapse" id="bs-example-navbar-collapse-2" aria-expanded="false" style="height: 0.8px;">
                     <ul class="nav navbar-nav">
@@ -35,7 +35,7 @@
                         <li><a href="#demo-source-code">Demo source code</a></li>
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
-                        <li><a href="https://github.com/HiFaraz/rudy">GitHub</a></li>
+                        <li><a href="https://github.com/HiFaraz/butterfly">GitHub</a></li>
                     </ul>
                 </div>
             </div>
@@ -43,49 +43,67 @@
         <div class="jumbotron" style="margin-top: 2rem;">
             <h1 id="title">Render views in under
                 <value name="renderTime"></value>ms for 1.9kb* </h1>
-            <p>Make simple, flexible, re-usable, social front-end components with Rudy</p>
+            <p>Make simple, flexible, re-usable, social front-end components with Butterfly</p>
             <small>* current render time (reload to try again), min + gzip</small>
         </div>
         <div class="row">
             <div class="col-lg-12">
                 <div class="page-header">
-                    <h1>Rudy is an experimental front-end component library</h1>
+                    <h1>Butterfly is an experimental front-end component library</h1>
                 </div>
             </div>
         </div>
+        <h2 id="get-started">Get started in 10 seconds</h2>
         <div class="row">
-            <div class="col-md-8" style="border-right: 1px solid #ccc">
-                <h2 id="get-started">Get started in 10 seconds</h2>
-                <strong>Define your template:</strong>
-                <pre class="prettyprint">&lt;div id="welcome"&gt; Message: &lt;input type="text" name="message" bind&gt; &lt;value name="message"&gt;&lt;/value&gt;&lt;/div&gt;</pre>
-                <strong>Define your component:</strong>
-                <pre class="prettyprint">var welcome = rudy( { target: '#welcome', data: { message: ''} } );</pre>
-                <strong>Mix things up:</strong>
-                <pre class="prettyprint">welcome.message = 'Hello World!';</pre>
-                <strong>Check out the result:</strong>
-                <div class="well" id="welcome">
-                    <p>Message: <input type="text" name="message" bind class="form-control"></p>
-                    <p class="lead">
-                        <value name="message"></value>
-                    </p>
+            <div class="col-md-6">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Your template</h3>
+                    </div>
+                    <div class="panel-body">
+                        <pre class="prettyprint"><code class="prettyprint">&lt;div id="welcome"&gt;
+    &lt;input type="text" name="message" bind&gt;
+    &lt;value name="message"&gt;&lt;/value&gt;
+&lt;/div&gt;</code></pre>
+                    </div>
+                    <div class="panel-footer">The <code>bind</code> attribute tells Butterfly to apply two-way data binding on this textbox. </div>
                 </div>
-                <p><small><a href="#top">(back to top)</a></small></p>
             </div>
-            <div class="col-md-4">
-                <h2>Status</h2>
-                <p class="bg-warning">Rudy is in pre-release state.</p>
-                <p>It weighs ~ 1.9kb minified and gzipped.</p>
-                <p>Rudy relies on ECMAScript 2015 Proxies. A limited functionality polyfill is available <a href="https://github.com/GoogleChrome/proxy-polyfill">here</a>.</p>
-                <p>There is a fully working demo below, and the demo source code is included in the bottom of the document.</p>
-                <p>The views below are dynamically generated. The view internals are not in the source HTML document.</p>
-                <p>Released under the MIT licence by <a href="https://github.com/HiFaraz">Faraz Syed</a>.</p>
+            <div class="col-md-6">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Your component</h3>
+                    </div>
+                    <div class="panel-body">
+                        <pre class="prettyprint well"><code>var welcome = butterfly({
+    target: '#welcome',
+    data: { message: ''}
+});
+
+welcome.message = 'Hello World!';</code></pre>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="row">
             <div class="col-md-12">
+                <div class="panel panel-success">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Your app view</h3>
+                    </div>
+                    <div class="panel-body" id="welcome">
+                        <input type="text" name="message" bind class="form-control">
+                        <span class="help-block lead"><value name="message"></value></span>
+                    </div>
+                </div>
+                <p><small><a href="#top">(back to top)</a></small></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-9" style="border-right: 1px solid #ccc">
                 <h2 id="simple-and-flexible">Simple and flexible</h2>
-                <p class="lead">Rudy began with a question: can you balance simplicity <em>and</em> flexibility in front-end components?</p>
-                <p>These are the core ideas behind Rudy:</p>
+                <p class="lead">Butterfly began with a question: can you balance simplicity <em>and</em> flexibility in front-end components?</p>
+                <p>These are the core ideas behind Butterfly:</p>
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -175,7 +193,7 @@
                                     <dt>Render updated values according to a map</dt>
                                     <dd>
                                         <p>
-                                            <p>Touch only the DOM elements mapped to the data model. This happens in the Rudy
+                                            <p>Touch only the DOM elements mapped to the data model. This happens in the Butterfly
                                                 internals. It creates a map when you first load the component.</p>
                                         </p>
                                     </dd>
@@ -208,6 +226,15 @@
                     </tbody>
                 </table>
                 <p><small><a href="#top">(back to top)</a></small></p>
+            </div>
+            <div class="col-md-3">
+                <h2>Status</h2>
+                <p class="bg-warning">Butterfly is in pre-release state.</p>
+                <p>It weighs ~ 1.9kb minified and gzipped.</p>
+                <p>Butterfly relies on ECMAScript 2015 Proxies. A limited functionality polyfill is available <a href="https://github.com/GoogleChrome/proxy-polyfill">here</a>.</p>
+                <p>There is a fully working demo below, and the demo source code is included in the bottom of the document.</p>
+                <p>The views below are dynamically generated. The view internals are not in the source HTML document.</p>
+                <p>Released under the MIT licence by <a href="https://github.com/HiFaraz">Faraz Syed</a>.</p>
             </div>
         </div>
         <div class="row">
@@ -264,7 +291,7 @@
         </div>
     </div>
     <script src="https://unpkg.com/marked@0.3.6"></script>
-    <script src="/js/rudy.js"></script>
+    <script src="/js/butterfly.js"></script>
     <script id="person-template" type="text/x-template">
         <table class="table table-responsive table-striped table-hover">
             <thead>
@@ -275,16 +302,34 @@
             </thead>
             <tbody>
                 <tr>
-                    <td><code>name</code></td>
+                    <td><code>firstName</code></td>
                     <td>
                         <!--you can enable two-way data binding on one specific form element by adding a `bind` attribute-->
-                        <p><input type="text" name="name" class="form-control" bind></p>
+                        <p><input type="text" name="firstName" class="form-control" bind></p>
                         <!--you can output the model value as text by using <value name=" variable_name ">-->
-                        <p><span class="label label-primary">VALUE</span> <samp><value name="name"></samp>
+                        <p><span class="label label-primary">VALUE</span> <samp><value name="firstname"></samp>
                         </p>
                         <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code> element by including the attribute <code>bind</code></p>
                         <p><span class="label label-info">WATCHER</span> Has a watcher function that interacts with another component
                             located in <code>#friend</code></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>lastName</code></td>
+                    <td>
+                        <p><input type="text" name="lastName" class="form-control" bind></p>
+                        <p><span class="label label-primary">VALUE</span> <samp><value name="lastName"></samp>
+                        </p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code> element by including the attribute <code>bind</code></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>fullName</code></td>
+                    <td>
+                        <p><input type="text" name="fullName" class="form-control"></p> <p><span class="label label-primary">VALUE</span> <samp><value name="fullName"></samp></p>
+                        <p><span class="label label-info">COMPUTATION</span> This is a computed value, it will update on any model or
+                            view updates</p>
+                        <p><span class="label label-info">BINDING</span> No two-way data binding applied</p>
                     </td>
                 </tr>
                 <tr>
@@ -293,15 +338,6 @@
                         <p><input type="range" name="age" class="form-control"></p>
                         <p><span class="label label-primary">VALUE</span> <samp><value name="age"></samp></p>
                         <p><span class="label label-info">BINDING</span> Two-way binding enabled for elements bound to <code>age</code> by setting <code>watchers: { age: true }</code></p>
-                    </td>
-                </tr>
-                <tr>
-                    <td><code>ageFn</code></td>
-                    <td>
-                        <p><input type="text" name="ageFn" class="form-control"></p <p><span class="label label-primary">VALUE</span> <samp><value name="ageFn"></samp></p>
-                        <p><span class="label label-info">COMPUTATION</span> This is a computed value, it will update on any model or
-                            view updates</p>
-                        <p><span class="label label-info">BINDING</span> No two-way data binding applied</p>
                     </td>
                 </tr>
                 <tr>
@@ -351,12 +387,12 @@
 'use strict';
 
 // here's the code for the demo in the introduction
-var welcome = rudy( { target: '#welcome', data: { message: ''} } );
+var welcome = butterfly( { target: '#welcome', data: { message: ''} } );
 welcome.message = 'Hello World!';
 
-// let's go! all you have to do is send an object to rudy.
+// let's go! all you have to do is send an object to butterfly.
 // hang on to the returned object btw, you can do stuff with it later
-var person = rudy(
+var person = butterfly(
 
     // the component behaviour is fed as object properties
     {
@@ -366,7 +402,8 @@ var person = rudy(
 
         // enter your initial data
         data : {
-            name: 'John',
+            firstName: 'John',
+            lastName: 'Smith',
             age: 30,
             address: {
                 country: 'Canada'
@@ -379,7 +416,7 @@ var person = rudy(
             // will not affect the view nor model
 
             // you can calculate data on every model/view update!
-            ageFn: function() {
+            fullName: function() {
                 
                 // you can access the rest of the model in here!
                 // the `this` variable will give you a locally scoped copy of the model
@@ -388,8 +425,8 @@ var person = rudy(
                 // you can alter it, but it will not have an affect outside of this function
                 // and it will not update the view
 
-                // return a value to pass it to the model (should be: 2)
-                return this.age * 2;
+                // return a value to pass it to the model
+                return this.firstName + ' ' + this.lastName;
             }
         },
 
@@ -398,7 +435,7 @@ var person = rudy(
         // instead of passing it an object
         watch: {
 
-            // setting to `true` tells Rudy to enable two-way data-binding on all form elements
+            // setting to `true` tells Butterfly to enable two-way data-binding on all form elements
             actor: true,
 
             // this function does not return anything to the form element. Instead it does another
@@ -425,11 +462,11 @@ var person = rudy(
             },
 
             // let's interact with another component
-            name: function(value, element) {
+            firstName: function(value, element) {
 
                 // you can interact with a totally different component with ordinary JavaScript
-                // this is the component under the markdown preview
-                friend.firstName = value.toUpperCase();
+                // this is the component below the markdown preview
+                friend.firstName = value;
             }
         },
 
@@ -455,18 +492,19 @@ var person = rudy(
 );
 
 // here's the code for the rendering time measurement in the title
-rudy( { target: '#title', data: { renderTime: person.$renderTime } } );
+butterfly( { target: '#title', data: { renderTime: person.$renderTime } } );
 
 // you don't need to be inside your component object to update the data. let's change an existing value
-person.name = 'Maria';
-person.address.country = '# Mexico\n* A land of wonder';
+person.firstName = 'Maria';
+person.lastName = 'Anderson'
+person.address.country = '# Antartica\n* A land of wonder';
 person.actor = true;
 
 // and one more brand new variable
 person.gender = 'female';
 
 // this is a second component that `person` can interact with
-var friend = rudy({
+var friend = butterfly({
     target: '#friend',
     data: {
         firstName: ''
@@ -474,7 +512,7 @@ var friend = rudy({
     template: 'HELLO <value name="firstName"></value>!'
 });
 
-// this is a utility function to make an AJAX request. it's not part of Rudy. we'll use it down below to bind the view to a server response
+// this is a utility function to make an AJAX request. it's not part of Butterfly. we'll use it down below to bind the view to a server response
 function getResource(url, callback) {
 
     return new Promise(function(resolve,reject) {

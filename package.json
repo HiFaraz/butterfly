@@ -1,10 +1,10 @@
 {
-  "name": "rudy",
+  "name": "butterfly",
   "version": "0.0.0",
   "description": "An experimental front-end package",
   "main": "index.js",
   "repository": {
-    "url": "https://hifaraz@github.com/HiFaraz/rudy.git",
+    "url": "https://hifaraz@github.com/HiFaraz/butterfly.git",
     "type": "git"
   },
   "scripts": {
