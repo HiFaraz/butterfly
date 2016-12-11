@@ -454,16 +454,13 @@ var person = butterfly(
             address: {
                 country: 'Canada'
             },
-            actor: true,
-        // },
+            actor: true
+        },
 
         // you can have computed values too! These will overwrite any data values with the same name though, so be careful in naming them!
         // these functions are called for each view update, including the initialization
         // the context is bound to the component data, computed values, and methods
-        // computed: {
-            
-            // all values passed to `this` are read-only and changing them 
-            // will not affect the view nor model
+        computed: {
 
             // you can calculate data on every model/view update!
             fullName: function() {

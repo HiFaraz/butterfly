@@ -18,11 +18,12 @@
   'use strict';
 
   function butterfly(component) {
-    component.data = component.data || {};
+    component.data = Object.assign({}, component.data || {}, component.computed || {}, component.methods || {});
+
     // if (component.data.$) throw TypeError('Found $ as data property (reserved namespace)');
 
     component.__bindings = {}; // for each path, stores an array of functions to be run when the path is set
-    component.__computed = []; // array of paths with computed values
+    component.__computed = []; // array of paths that are bound to computed values
 
     createView(component);
     createViewModel(component);
