@@ -152,12 +152,9 @@
   }
 
   function insertItemBetweenEachElementOfArray(targetArray, item) {
-    var result = [];
-    targetArray.forEach(function (element) {
-      result.push(element, item);
-    })
-    result.pop();
-    return result;
+    return targetArray.reduce(function (result, element) {
+      return result.concat(element, item);
+    }, []).slice(0, -1);
   }
 
   function JSONPath(basePath, property) {
@@ -320,7 +317,7 @@
             return arrayOfTextToSplitByAllMatches
               .reduce(
                 function (arrayOfTextAlreadySplitByMatch, textToSplitByMatch) {
-                  return (textToSplitByMatch.indexOf(match) === -1 || textToSplitByMatch === match) ? arrayOfTextAlreadySplitByMatch.concat(textToSplitByMatch) : arrayOfTextAlreadySplitByMatch.concat(insertItemBetweenEachElementOfArray(textToSplitByMatch.split(match), match));
+                  return (textToSplitByMatch === match) ? arrayOfTextAlreadySplitByMatch.concat(textToSplitByMatch) : arrayOfTextAlreadySplitByMatch.concat(insertItemBetweenEachElementOfArray(textToSplitByMatch.split(match), match));
                 }, []
               );
 
