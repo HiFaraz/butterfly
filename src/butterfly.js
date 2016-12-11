@@ -37,14 +37,13 @@
     else _buildBinding(node, scope);
 
     function _buildBinding(node, scope) {
-      if (scope) console.log(node, scope)
       var typeTable = {};
 
       typeTable.INPUT = function inputElements(node) {
-        if (node.getAttribute('name') && isSafePath(node.getAttribute('name'))) {
+        if (node.getAttribute('name')) {
           touchBinding(component, node.getAttribute('name'));
           var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
-          saveBinding(component, node.getAttribute('name'), function (value) {
+          saveBinding(component, scope, function (value) {
             if (node[attr] != value) node[attr] = value;
           });
           setEventListenersOnFormElements(node, attr);
@@ -53,7 +52,7 @@
 
       ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
         typeTable[type] = function otherFormElements(node) {
-          if (node.getAttribute('name') && isSafePath(node.getAttribute('name'))) {
+          if (node.getAttribute('name')) {
             touchBinding(component, node.getAttribute('name'));
             saveBinding(component, node.getAttribute('name'), function (value) {
               if (node.value != value) node.value = value;
@@ -64,11 +63,11 @@
       });
 
       typeTable.LIST = function list(node) {
-        if (node.getAttribute('name') && isSafePath(node.getAttribute('name'))) {}
+        if (node.getAttribute('name')) {
       }
 
       typeTable.VALUE = function inputElements(node) {
-        if (node.getAttribute('name') && isSafePath(node.getAttribute('name'))) {
+        if (node.getAttribute('name')) {
           touchBinding(component, node.getAttribute('name'));
           saveBinding(component, node.getAttribute('name'), function (value) {
             if (node.innerHTML != value) node.innerHTML = value;
@@ -85,7 +84,7 @@
         var matches = node.textContent.match(/{{(.+?)}}/g);
         if (matches) {
           var path = matches[0].replace(/[{}]/g, '').trim();
-          if (isSafePath(path)) {
+          if (isSafePath(path)) { // TODO move this earlier in the stack, before we build the bindings, or better yet right after we split the text nodes
             touchBinding(component, path);
             saveBinding(component, path, function (value) {
               node.nodeValue = value;
@@ -132,9 +131,12 @@
 
     function bindViewToViewModel(doc) {
       dom = doc.reduce(function (collection, node) {
-        var scope = (node.getAttribute && node.getAttribute('name')) ? (node.getAttribute('name') || '') : ''
-        if (node.nodeName === '#text') return collection.concat(splitTextNodeByTemplates(node, buildBinding(component), scope));
-        else return collection.concat(traverseDOM(node, buildBinding(component), scope));
+        if (!node.getAttribute || !node.hasAttribute('name') || isSafePath(node.getAttribute('name'))) {
+          var scope = (node.getAttribute && node.getAttribute('name')) ? (node.getAttribute('name') || '') : '';
+          if (node.nodeName === '#text') return collection.concat(splitTextNodeByTemplates(node, buildBinding(component), scope));
+          else return collection.concat(traverseDOM(node, buildBinding(component), scope));
+        }
+        return collection;
       }, []);
       return component;
     }
@@ -304,6 +306,7 @@
     var splitArray = splitTextNodeByTemplatesIntoArray(node);
     if (Array.isArray(splitArray)) {
       splitArray.forEach(function (newNode) {
+        // TODO check if each node is safe with isSafePath IF it is a match type string
         pipe(
           callback,
           function (newNode) {
@@ -364,8 +367,11 @@
 
     var child = pointer.firstChild;
     while (child) {
-      if (child.nodeName === '#text') splitTextNodeByTemplates(child, callback, scope.concat((child.getAttribute && child.getAttribute('name')) ? (((scope !== '') ? '.' : '').concat(child.getAttribute('name'))) : ''));
-      else traverseDOM(child, callback, scope.concat((child.getAttribute && child.getAttribute('name')) ? (((scope !== '') ? '.' : '').concat(child.getAttribute('name'))) : ''));
+      if (!child.getAttribute || !child.hasAttribute('name') || isSafePath(child.getAttribute('name'))) {
+        scope = scope.concat((child.getAttribute && child.getAttribute('name')) ? (((scope !== '') ? '.' : '').concat(child.getAttribute('name'))) : '');
+        if (child.nodeName === '#text') splitTextNodeByTemplates(child, callback, scope);
+        else traverseDOM(child, callback, scope);
+      }
       child = child.nextSibling;
     }
 
