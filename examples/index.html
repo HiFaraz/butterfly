@@ -404,6 +404,11 @@ welcome.message = 'Hello World!';</code></pre>
                                     </select></p>
                         <p><span class="label label-primary">VALUE</span> <samp> {{ gender }} </samp></p>
                         <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;select&gt;</code> element by including the attribute <code>bind</code></p>
+                        <p><span class="label label-info">WATCHER</span> Has a watcher function that runs the <code>introduce</code> method, which adds the introduction text below</p>
+                        <blockquote>
+                            <p id="person-introduction"></p>
+                            <small> {{ fullName }} </small>
+                        </blockquote>
                     </td>
                 </tr>
             </tbody>
@@ -464,13 +469,6 @@ var person = butterfly(
 
             // you can calculate data on every model/view update!
             fullName: function() {
-                
-                // you can access the rest of the model in here!
-                // the `this` variable will give you a locally scoped copy of the model
-
-                // remember, you only have a local copy of the model
-                // you can alter it, but it will not have an affect outside of this function
-                // and it will not update the view
 
                 // return a value to pass it to the model
                 return this.firstName + ' ' + this.lastName;
@@ -480,9 +478,19 @@ var person = butterfly(
             }
         },
 
+        // where would we be without some methods? here are some methods. everybody likes methods
+        methods: {
+
+            // as usual, the data model and computed values are bound to the context
+            introduce: function() {
+                document.getElementById('person-introduction').innerHTML = `Hi!<br><br>My name is ${this.fullName()} and my gender is ${this.gender}.<br><br>Lovely to meet you!`;
+            }
+        },
+
         // create some watchers! get notified by input events and model updates
         // to enable two-way binding on all variables, set `watch: true`
         // instead of passing it an object
+        // watchers are called after data has changed but before it is written to the view
         watch: {
 
             // setting to `true` tells Butterfly to enable two-way data-binding on all form elements
@@ -495,7 +503,13 @@ var person = butterfly(
                 }
             },
 
-            age: true
+            age: true,
+
+            gender: function() {
+
+                // let's run a method
+                this.introduce();
+            }
         },
 
         // this function is called once before the first render, when the view model is created
