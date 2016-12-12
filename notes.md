@@ -5,6 +5,9 @@ DONE why is create running after the first synctoviews in mapbindings? >> becaus
 DONE remove templateURL support - templates should be packed in production, so there should not be anything to go against that. Agree with Vue.js on this.
 DONE name textbox cursor should not move then i release the mouse, check if the watcher/binder has changed the value before pushing the update
 DONE when patching in bulk, don't compute live values for every patch!
+DONE diff list updates
+
+list rendering optimization opportunity: pre-generate a large set of rows, then add them in bulk. profiler shows lots of time spent in cloneNode and appendChild
 
 debounce DOM updates
 
