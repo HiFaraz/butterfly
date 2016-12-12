@@ -76,6 +76,7 @@
 
       touchBinding(component, node.getAttribute('name'));
       saveBinding(component, node.getAttribute('name'), function (value) {
+        console.log('SET LIST', component.target, scope, value)
         var oldListContainer = listContainer;
         listContainer = document.createElement('div');
         removeAllNodeChildren(listContainer); // TODO think about diffing instead of blind wipe and render
@@ -281,13 +282,15 @@
     const _handler = Object.assign({}, handler, {
       set: function (target, property, value, receiver) {
 
-        if (!isArray && typeof value === 'object' && !Array.isArray(value)) Reflect.set(target, property, proxyfull(value, handler, logger, JSONPath(basePath, property)));
+        console.log('SET', target, Array.isArray(target), property, value, receiver, JSONPath(basePath, property))
+
+        if (typeof value === 'object') Reflect.set(target, property, proxyfull(value, handler, logger, JSONPath(basePath, property)));
         else Reflect.set(target, property, value);
 
-        Reflect.set(original, property, value);
+        // Reflect.set(original, property, value);
 
         var path = (isArray) ? JSONPath(basePath) : JSONPath(basePath, property);
-        if (handler.set) return handler.set(target, property, (isArray) ? target : value, receiver, path);
+        if (handler.set && !(Array.isArray(target) && property == 'length')) return handler.set(target, property, (isArray) ? target : value, receiver, path);
         else return true;
       }
     });
