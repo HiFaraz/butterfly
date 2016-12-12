@@ -76,6 +76,8 @@
 
       touchBinding(component, node.getAttribute('name'));
       saveBinding(component, node.getAttribute('name'), function (value) {
+        var oldListContainer = listContainer;
+        listContainer = document.createElement('div');
         removeAllNodeChildren(listContainer); // TODO think about diffing instead of blind wipe and render
         value.forEach(function (listValue, index) {
           var listItemViewContainer = listItemViewContainerMaster.cloneNode(true);
@@ -83,6 +85,7 @@
           populateView(component, `${scope}.${index}`);
           listContainer.appendChild(listItemViewContainer);
         });
+        listParent.replaceChild(listContainer, oldListContainer);
       });
     }
     listParent.replaceChild(listContainer, node);
