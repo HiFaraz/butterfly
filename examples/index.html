@@ -43,18 +43,9 @@
             </div>
         </nav>
         <div class="jumbotron" style="margin-top: 2rem;">
-            <h1 id="timer">Render time: {{ renderTime }} ms. Weight: 1.94kb*</h1>
+            <h1 id="timer">Render time: {{ renderTime }} ms. Weight: 2.5kb*</h1>
             <p>Fast, simple, light-weight: pick three. Butterfly is a front-end library for building interactive views</p>
             <small>* current render time (reload to try again), min + gzip</small>
-        </div>
-        <div id="listapp">
-            <list name="friends">
-                <h1><span class="label label-primary">VALUE</span> <samp> {{ $value }} </samp></h1>
-                <list name="numbers">
-                    Hi
-                    <p><span class="label label-primary">VALUE</span> <samp> {{ $value }} </samp></p>
-                </list>
-            </list>
         </div>
         <!--<div class="row">
             <div class="col-lg-12">
@@ -216,8 +207,7 @@ welcome.message = 'Hello World!';</code></pre>
                                         <p><code>component.target.innerHTML = '...'</code></p>
                                     </dd>
                                     <dt>Scanning the real or virtual DOM to see what needs to be updated</dt>
-                                    <dd>
-                                    </dd>
+                                    <dd></dd>
                                 </dl>
                             </td>
                         </tr>
@@ -229,7 +219,7 @@ welcome.message = 'Hello World!';</code></pre>
             <div class="col-md-3">
                 <h2>Status</h2>
                 <p class="bg-warning">Butterfly is in pre-release state.</p>
-                <p>It weighs ~ 1.9kb minified and gzipped.</p>
+                <p>It weighs ~ 2.5kb minified and gzipped.</p>
                 <p>Butterfly relies on ECMAScript 2015 Proxies. A limited functionality polyfill is available <a href="https://github.com/GoogleChrome/proxy-polyfill">here</a>.</p>
                 <p>There is a fully working demo below, and the demo source code is included in the bottom of the document.</p>
                 <p>The views below are dynamically generated. The view internals are not in the source HTML document.</p>
@@ -424,8 +414,16 @@ welcome.message = 'Hello World!';</code></pre>
                 <tr>
                     <td><code>friends</code></td>
                     <td>
-                        
-                        <p>This is a list of friends</p>
+                        <ul class="list-group">
+                            <list name="friends">
+                                <li class="list-group-item">
+                                    <p><input type="text" name="name" bind class="form-control"></p>
+                                    <p><span class="label label-primary">VALUE</span> <samp> {{ name }} </samp></p>
+                                    <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code> element by including the attribute <code>bind</code></p>
+                                </li>
+                            </list>
+                        </ul>
+                        <p><span class="label label-primary">LIST</span> This is an array of objects, each with a <code>name</code> property</p>
                     </td>
                 </tr>
             </tbody>
@@ -433,14 +431,6 @@ welcome.message = 'Hello World!';</code></pre>
     </script>
     <script id="code">
 'use strict';
-
-// temp code
-var list = butterfly({
-    target: '#listapp',
-    data: {
-        friends: ['Emma', 'David', 'Jack']
-    }
-});
 
 // here's the code for the demo in the introduction
 var welcome = butterfly( { target: '#welcome', data: { message: ''} } );
@@ -485,7 +475,11 @@ var person = butterfly(
                 country: 'Canada'
             },
             actor: true,
-            friends: ['Emma', 'David', 'Jack']
+            friends: [
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'}
+                ]
         },
 
         // you can have computed values too! These will overwrite any data values with the same name though, so be careful in naming them!
