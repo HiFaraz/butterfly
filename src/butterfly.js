@@ -17,6 +17,83 @@
 
   'use strict';
 
+  var typeTable = {}; // used by buildBinding. Moved out of the function because it should only be initialized once
+
+  typeTable.INPUT = function inputElements(component, node, scope) {
+    if (node.getAttribute('name')) {
+      touchBinding(component, node.getAttribute('name'));
+      var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
+      saveBinding(component, scope, function (value) {
+        if (node[attr] != value) node[attr] = value;
+      });
+      setEventListenersOnFormElements(component, node, scope, attr);
+    }
+  };
+
+  ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
+    typeTable[type] = function otherFormElements(component, node, scope) {
+      if (node.getAttribute('name')) {
+        touchBinding(component, node.getAttribute('name'));
+        saveBinding(component, node.getAttribute('name'), function (value) {
+          if (node.value != value) node.value = value;
+        });
+        setEventListenersOnFormElements(component, node, scope);
+      }
+    };
+  });
+
+  typeTable['LIST'] = function list(component, node, scope) {
+    var listContainer = document.createElement('div');
+    if (node.getAttribute('name')) {
+      console.log('LIST', component.target, scope);
+      var listParent = node.parentNode;
+      // listParent.removeChild(node);
+
+      // clone the child nodes in a docment fragment available to the binding
+      var listNodesMaster = document.createDocumentFragment();
+      stringToDOMDocument(node.innerHTML).forEach(listNodesMaster.appendChild.bind(listNodesMaster));
+
+      touchBinding(component, node.getAttribute('name'));
+      saveBinding(component, node.getAttribute('name'), function (value) {
+        // console.log('LIST SET', scope, value);
+        // create copies of the master
+        // bind nodes in the master
+        // mount to container through a doc fragment
+        removeAllNodeChildren(listContainer); // TODO think about diffing instead of blind wipe and render
+        value.forEach(function (listValue) {
+          var listItemNodes = listNodesMaster.cloneNode(true);
+          listContainer.appendChild(listItemNodes);
+        });
+      });
+    }
+    return listContainer;
+  }
+
+  typeTable.VALUE = function inputElements(component, node, scope) {
+    if (node.getAttribute('name')) {
+      touchBinding(component, node.getAttribute('name'));
+      saveBinding(component, node.getAttribute('name'), function (value) {
+        if (node.innerHTML != value) node.innerHTML = value;
+      });
+      node.innerHTML = '';
+    }
+  };
+
+  typeTable['#text'] = function textNodes(component, node, scope) {
+    var matches = node.textContent.match(/{{(.+?)}}/g);
+    if (matches) {
+      var path = matches[0].replace(/[{}]/g, '').trim();
+      if (isSafePath(path)) { // TODO move this earlier in the stack, before we build the bindings, or better yet right after we split the text nodes
+        touchBinding(component, path);
+        if (scope) console.log('WARNING text node has a scope!', component.target, node.textContent, scope, path) // TODO this is a warning, right now text nodes shouldn't have a scope until I implement it, but I noticed that welcome {{ message }} had a scope of message from the input box, but cannot replicate
+        saveBinding(component, path, function (value) {
+          node.nodeValue = value;
+        });
+        node.textContent = '';
+      }
+    }
+  };
+
   function butterfly(component) {
     component.data = Object.assign({}, component.data || {}, component.computed || {}, component.methods || {});
 
@@ -37,81 +114,6 @@
     else return _buildBinding(node, scope);
 
     function _buildBinding(node, scope, traversalCallback) {
-      var typeTable = {};
-
-      typeTable.INPUT = function inputElements(component, node, scope) {
-        if (node.getAttribute('name')) {
-          touchBinding(component, node.getAttribute('name'));
-          var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
-          saveBinding(component, scope, function (value) {
-            if (node[attr] != value) node[attr] = value;
-          });
-          setEventListenersOnFormElements(component, node, scope, attr);
-        }
-      };
-
-      ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
-        typeTable[type] = function otherFormElements(component, node, scope) {
-          if (node.getAttribute('name')) {
-            touchBinding(component, node.getAttribute('name'));
-            saveBinding(component, node.getAttribute('name'), function (value) {
-              if (node.value != value) node.value = value;
-            });
-            setEventListenersOnFormElements(component, node, scope);
-          }
-        };
-      });
-
-      typeTable['LIST'] = function list(component, node, scope) {
-        var listContainer = document.createElement('div');
-        if (node.getAttribute('name')) {
-          console.log('LIST', component.target, scope);
-          var listParent = node.parentNode;
-          // listParent.removeChild(node);
-
-          // clone the child nodes in a docment fragment available to the binding
-          var listNodesMaster = document.createDocumentFragment();
-          stringToDOMDocument(node.innerHTML).forEach(listNodesMaster.appendChild.bind(listNodesMaster));
-
-          touchBinding(component, node.getAttribute('name'));
-          saveBinding(component, node.getAttribute('name'), function (value) {
-            // console.log('LIST SET', scope, value);
-            // create copies of the master
-            // bind nodes in the master
-            // mount to container through a doc fragment
-            removeAllNodeChildren(listContainer); // TODO think about diffing instead of blind wipe and render
-            value.forEach(function (listValue) {
-              listContainer.appendChild(listNodesMaster.cloneNode(true));
-            });
-          });
-        }
-        return listContainer;
-      }
-
-      typeTable.VALUE = function inputElements(component, node, scope) {
-        if (node.getAttribute('name')) {
-          touchBinding(component, node.getAttribute('name'));
-          saveBinding(component, node.getAttribute('name'), function (value) {
-            if (node.innerHTML != value) node.innerHTML = value;
-          });
-          node.innerHTML = '';
-        }
-      };
-
-      typeTable['#text'] = function textNodes(component, node, scope) {
-        var matches = node.textContent.match(/{{(.+?)}}/g);
-        if (matches) {
-          var path = matches[0].replace(/[{}]/g, '').trim();
-          if (isSafePath(path)) { // TODO move this earlier in the stack, before we build the bindings, or better yet right after we split the text nodes
-            touchBinding(component, path);
-            if (scope) console.log('WARNING text node has a scope!', component.target, node.textContent, scope, path) // TODO this is a warning, right now text nodes shouldn't have a scope until I implement it, but I noticed that welcome {{ message }} had a scope of message from the input box, but cannot replicate
-            saveBinding(component, path, function (value) {
-              node.nodeValue = value;
-            });
-            node.textContent = '';
-          }
-        }
-      };
 
       if (typeof node.nodeName !== 'undefined' && typeTable[node.nodeName]) {
         if (['LIST', '#text'].indexOf(node.nodeName) === -1) traversalCallback();
