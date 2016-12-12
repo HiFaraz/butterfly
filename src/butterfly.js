@@ -68,25 +68,21 @@
           console.log('LIST', component.target, scope);
           var listParent = node.parentNode;
           // listParent.removeChild(node);
-          // console.log(listParent.childNodes)
 
           // clone the child nodes in a docment fragment available to the binding
           var listNodesMaster = document.createDocumentFragment();
           stringToDOMDocument(node.innerHTML).forEach(listNodesMaster.appendChild.bind(listNodesMaster));
-          // console.log(listNodesMaster);
 
           touchBinding(component, node.getAttribute('name'));
           saveBinding(component, node.getAttribute('name'), function (value) {
-            // console.log(listParent)
-            // removeAllNodeChildren(listParent); // TODO think about diffing instead of blind wipe and render
-
-            console.log('new value for friends', value);
-            value.forEach(function (listValue) {
-              // listParent.appendChild(listNodesMaster.cloneNode(true));
-            });
+            // console.log('LIST SET', scope, value);
             // create copies of the master
             // bind nodes in the master
-            // mount to parent through a doc fragment: listParent.appendChild(copyOfFragment);
+            // mount to container through a doc fragment
+            removeAllNodeChildren(listContainer); // TODO think about diffing instead of blind wipe and render
+            value.forEach(function (listValue) {
+              listContainer.appendChild(listNodesMaster.cloneNode(true));
+            });
           });
         }
         return listContainer;
