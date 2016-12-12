@@ -44,9 +44,17 @@
         </nav>
         <div class="jumbotron" style="margin-top: 2rem;">
             <h1 id="timer">Render time: {{ renderTime }} ms. Weight: 1.94kb*</h1>
-            <p>Fast, simple, light-weight: pick three. Butterfly is a front-end library for building interactive views
-            </p>
+            <p>Fast, simple, light-weight: pick three. Butterfly is a front-end library for building interactive views</p>
             <small>* current render time (reload to try again), min + gzip</small>
+        </div>
+        <div id="listapp">
+            <list name="friends">
+                <h1><span class="label label-primary">VALUE</span> <samp> {{ $value }} </samp></h1>
+                <list name="numbers">
+                    Hi
+                    <p><span class="label label-primary">VALUE</span> <samp> {{ $value }} </samp></p>
+                </list>
+            </list>
         </div>
         <!--<div class="row">
             <div class="col-lg-12">
@@ -416,9 +424,7 @@ welcome.message = 'Hello World!';</code></pre>
                 <tr>
                     <td><code>friends</code></td>
                     <td>
-                        <p>
-                            <list name="friends"><p><span class="label label-primary">VALUE</span> <samp> {{ $value }} </samp></p></list>
-                        </p>
+                        
                         <p>This is a list of friends</p>
                     </td>
                 </tr>
@@ -427,6 +433,14 @@ welcome.message = 'Hello World!';</code></pre>
     </script>
     <script id="code">
 'use strict';
+
+// temp code
+var list = butterfly({
+    target: '#listapp',
+    data: {
+        friends: ['Emma', 'David', 'Jack']
+    }
+});
 
 // here's the code for the demo in the introduction
 var welcome = butterfly( { target: '#welcome', data: { message: ''} } );
@@ -437,7 +451,7 @@ welcome.message = 'Hello World!';
 var personHistory = butterfly({
     target: '#person-history',
     data: {
-        store: []
+        store: ''
     }
 });
 

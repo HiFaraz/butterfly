@@ -34,39 +34,65 @@
   function buildBinding(component, node, scope) {
 
     if (typeof node === 'undefined') return _buildBinding;
-    else _buildBinding(node, scope);
+    else return _buildBinding(node, scope);
 
-    function _buildBinding(node, scope) {
+    function _buildBinding(node, scope, traversalCallback) {
       var typeTable = {};
 
-      typeTable.INPUT = function inputElements(node) {
+      typeTable.INPUT = function inputElements(component, node, scope) {
         if (node.getAttribute('name')) {
           touchBinding(component, node.getAttribute('name'));
           var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
           saveBinding(component, scope, function (value) {
             if (node[attr] != value) node[attr] = value;
           });
-          setEventListenersOnFormElements(node, attr);
+          setEventListenersOnFormElements(component, node, scope, attr);
         }
       };
 
       ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
-        typeTable[type] = function otherFormElements(node) {
+        typeTable[type] = function otherFormElements(component, node, scope) {
           if (node.getAttribute('name')) {
             touchBinding(component, node.getAttribute('name'));
             saveBinding(component, node.getAttribute('name'), function (value) {
               if (node.value != value) node.value = value;
             });
-            setEventListenersOnFormElements(node);
+            setEventListenersOnFormElements(component, node, scope);
           }
         };
       });
 
-      typeTable.LIST = function list(node) {
+      typeTable['LIST'] = function list(component, node, scope) {
+        var listContainer = document.createElement('div');
         if (node.getAttribute('name')) {
+          console.log('LIST', component.target, scope);
+          var listParent = node.parentNode;
+          // listParent.removeChild(node);
+          // console.log(listParent.childNodes)
+
+          // clone the child nodes in a docment fragment available to the binding
+          var listNodesMaster = document.createDocumentFragment();
+          stringToDOMDocument(node.innerHTML).forEach(listNodesMaster.appendChild.bind(listNodesMaster));
+          // console.log(listNodesMaster);
+
+          touchBinding(component, node.getAttribute('name'));
+          saveBinding(component, node.getAttribute('name'), function (value) {
+            // console.log(listParent)
+            // removeAllNodeChildren(listParent); // TODO think about diffing instead of blind wipe and render
+
+            console.log('new value for friends', value);
+            value.forEach(function (listValue) {
+              // listParent.appendChild(listNodesMaster.cloneNode(true));
+            });
+            // create copies of the master
+            // bind nodes in the master
+            // mount to parent through a doc fragment: listParent.appendChild(copyOfFragment);
+          });
+        }
+        return listContainer;
       }
 
-      typeTable.VALUE = function inputElements(node) {
+      typeTable.VALUE = function inputElements(component, node, scope) {
         if (node.getAttribute('name')) {
           touchBinding(component, node.getAttribute('name'));
           saveBinding(component, node.getAttribute('name'), function (value) {
@@ -76,16 +102,13 @@
         }
       };
 
-
-
-      // faraz
-
-      typeTable['#text'] = function textNodes(node) {
+      typeTable['#text'] = function textNodes(component, node, scope) {
         var matches = node.textContent.match(/{{(.+?)}}/g);
         if (matches) {
           var path = matches[0].replace(/[{}]/g, '').trim();
           if (isSafePath(path)) { // TODO move this earlier in the stack, before we build the bindings, or better yet right after we split the text nodes
             touchBinding(component, path);
+            if (scope) console.log('WARNING text node has a scope!', component.target, node.textContent, scope, path) // TODO this is a warning, right now text nodes shouldn't have a scope until I implement it, but I noticed that welcome {{ message }} had a scope of message from the input box, but cannot replicate
             saveBinding(component, path, function (value) {
               node.nodeValue = value;
             });
@@ -94,30 +117,20 @@
         }
       };
 
-      function setEventListenersOnFormElements(node, attribute = 'value') {
-        var events = ['onclick', 'onchange', 'onkeypress', 'oninput'];
-        var watcher = getPathValue(component.watch, node.getAttribute('name'));
-        if ((node.hasAttribute('no-bind') === false) && (component.watch === true || watcher === true || node.hasAttribute('bind')))
-          setEventListenersOnElement(node, function () {
-            if (node[attribute] !== getPathValue(component.data, node.getAttribute('name'))) setPathValue(component.data, node.getAttribute('name'), node[attribute]);
-          }, ...events);
-
-        function setEventListenersOnElement(node, handler, ...events) {
-          events.forEach(function (e) {
-            node[e] = handler;
-          });
-        }
+      if (typeof node.nodeName !== 'undefined' && typeTable[node.nodeName]) {
+        if (['LIST', '#text'].indexOf(node.nodeName) === -1) traversalCallback();
+        return typeTable[node.nodeName](component, node, scope) || node;
+      } else {
+        traversalCallback();
+        return node;
       }
-
-      if (typeof node.nodeName !== 'undefined' && typeTable[node.nodeName]) typeTable[node.nodeName](node);
-      return node;
     }
-
   }
 
   function buildView(component) {
     if (component.template) return stringToDOMDocument((component.template[0] === '#') ? document.querySelector(component.template).innerHTML : component.template);
     else return Array.from(document.getElementById(component.target.slice(1)).childNodes);
+    // else return stringToDOMDocument(document.getElementById(component.target.slice(1)).innerHTML);
   }
 
   function createView(component) {
@@ -187,12 +200,16 @@
 
   function mountNodesToTarget(component, nodes) {
     var target = document.getElementById(component.target.slice(1));
-    while (target.firstChild) {
-      target.removeChild(target.firstChild);
-    }
+    removeAllNodeChildren(target);
     var fragment = document.createDocumentFragment();
     nodes.forEach(fragment.appendChild.bind(fragment));
     target.appendChild(fragment);
+  }
+
+  function removeAllNodeChildren(node) {
+    while (node.firstChild) {
+      node.removeChild(node.firstChild);
+    }
   }
 
   function runWatcher(component, path, newValue) {
@@ -291,6 +308,21 @@
     component.__bindings[path].push(binder);
   }
 
+  function setEventListenersOnFormElements(component, node, scope, attribute = 'value') {
+    var events = ['onclick', 'onchange', 'onkeypress', 'oninput'];
+    var watcher = getPathValue(component.watch, node.getAttribute('name'));
+    if ((node.hasAttribute('no-bind') === false) && (component.watch === true || watcher === true || node.hasAttribute('bind')))
+      setEventListenersOnElement(node, function () {
+        if (node[attribute] !== getPathValue(component.data, node.getAttribute('name'))) setPathValue(component.data, node.getAttribute('name'), node[attribute]);
+      }, ...events);
+
+    function setEventListenersOnElement(node, handler, ...events) {
+      events.forEach(function (e) {
+        node[e] = handler;
+      });
+    }
+  }
+
   function setPathValue(source, path, value) { // inspired by: http://stackoverflow.com/posts/18937118/revisions
     var pointer = source;
     var keys = path.split('.');
@@ -309,7 +341,7 @@
         // TODO check if each node is safe with isSafePath IF it is a match type string
         pipe(
           callback,
-          function (newNode) {
+          function () {
             node.parentNode.insertBefore(newNode, node);
           }
         )(newNode, scope);
@@ -355,7 +387,9 @@
   }
 
   function stringToDOMDocument(str) {
-    return Array.from((new DOMParser()).parseFromString(str, 'text/html').body.childNodes);
+    var doc = document.createElement('html');
+    doc.innerHTML = str;
+    return Array.from(doc.childNodes[1].childNodes);
   }
 
   function touchBinding(component, path) {
@@ -363,19 +397,17 @@
   }
 
   function traverseDOM(pointer, callback, scope = '') { // inspiration: http://www.javascriptcookbook.com/article/Traversing-DOM-subtrees-with-a-recursive-walk-the-DOM-function/
-    callback(pointer, scope);
-
-    var child = pointer.firstChild;
-    while (child) {
-      if (!child.getAttribute || !child.hasAttribute('name') || isSafePath(child.getAttribute('name'))) {
-        scope = scope.concat((child.getAttribute && child.getAttribute('name')) ? (((scope !== '') ? '.' : '').concat(child.getAttribute('name'))) : '');
-        if (child.nodeName === '#text') splitTextNodeByTemplates(child, callback, scope);
-        else traverseDOM(child, callback, scope);
+    return callback(pointer, scope, function () {
+      var child = pointer.firstChild;
+      while (child) {
+        if (!child.getAttribute || !child.hasAttribute('name') || isSafePath(child.getAttribute('name'))) {
+          scope = scope.concat((child.getAttribute && child.getAttribute('name')) ? (((scope !== '') ? '.' : '').concat(child.getAttribute('name'))) : '');
+          if (child.nodeName === '#text') splitTextNodeByTemplates(child, callback, scope);
+          else traverseDOM(child, callback, scope);
+        }
+        child = child.nextSibling;
       }
-      child = child.nextSibling;
-    }
-
-    return pointer;
+    });
   }
 
   return butterfly;
