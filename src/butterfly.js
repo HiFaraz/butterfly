@@ -71,22 +71,38 @@
     var listParent = node.parentNode;
     var listContainer = document.createElement('div');
     if (node.getAttribute('name')) {
-      var listItemViewContainerMaster = document.createDocumentFragment();
-      Array.from(node.cloneNode(true).childNodes).forEach(listItemViewContainerMaster.appendChild.bind(listItemViewContainerMaster));
+      var listItemContainerMaster = document.createDocumentFragment();
+      Array.from(node.cloneNode(true).childNodes).forEach(listItemContainerMaster.appendChild.bind(listItemContainerMaster));
 
       touchBinding(component, node.getAttribute('name'));
       saveBinding(component, node.getAttribute('name'), function (value) {
-        console.log('SET LIST', component.target, scope, value)
-        var oldListContainer = listContainer;
-        listContainer = document.createElement('div');
-        removeAllNodeChildren(listContainer); // TODO think about diffing instead of blind wipe and render
-        value.forEach(function (listValue, index) {
-          var listItemViewContainer = listItemViewContainerMaster.cloneNode(true);
-          bindViewToViewModel(component, Array.from(listItemViewContainer.childNodes), `${scope}.${index}`); // bind the listItemNodes to the scope
-          populateView(component, `${scope}.${index}`);
-          listContainer.appendChild(listItemViewContainer);
-        });
-        listParent.replaceChild(listContainer, oldListContainer);
+        // console.log('SET LIST', component.target, scope, value)
+
+        var oldLength = listContainer.children.length;
+        var newLength = value.length;
+        var diffLength = newLength - oldLength;
+
+        if (diffLength < 0) {
+          // console.log('REMOVE FROM LIST', diffLength);
+          Array.from(listContainer.children).forEach(function (listItemNode, index) {
+            if (index < newLength) populateView(component, `${scope}.${index}`);
+            else listContainer.removeChild(listItemNode);
+          });
+
+        } else if (diffLength > 0) {
+          // console.log('ADD TO LIST', diffLength);
+          var newListItemsContainer = document.createDocumentFragment();
+
+          value.forEach(function (listValue, index) {
+            if (index >= oldLength) {
+              var listItemContainer = listItemContainerMaster.cloneNode(true);
+              bindViewToViewModel(component, Array.from(listItemContainer.childNodes), `${scope}.${index}`);
+              newListItemsContainer.appendChild(listItemContainer);
+            } else populateView(component, `${scope}.${index}`);
+          });
+          populateView(component, `${scope}.`);
+          listContainer.appendChild(newListItemsContainer);
+        }
       });
     }
     listParent.replaceChild(listContainer, node);
@@ -282,7 +298,7 @@
     const _handler = Object.assign({}, handler, {
       set: function (target, property, value, receiver) {
 
-        console.log('SET', target, Array.isArray(target), property, value, receiver, JSONPath(basePath, property))
+        // console.log('SET', target, property, value, receiver, JSONPath(basePath, property));
 
         if (typeof value === 'object') Reflect.set(target, property, proxyfull(value, handler, logger, JSONPath(basePath, property)));
         else Reflect.set(target, property, value);
