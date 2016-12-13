@@ -17,189 +17,158 @@
 
   'use strict';
 
-  function butterfly(component) {
-    component.data = Object.assign({}, component.data || {}, component.computed || {}, component.methods || {});
+  var formElementNodeNames = ['input', 'output', 'range', 'select', 'span', 'textarea'];
+  var formElementSelectors = formElementNodeNames.reduce(function (selectors, nodeName) {
+    return selectors.concat((nodeName + '[name]:not([name=""])'));
+  }, []).join(',');
 
-    // if (component.data.$) throw TypeError('Found $ as data property (reserved namespace)');
+  function butterfly(app) {
+    app.data = Object.assign({}, app.data || {}, app.computed || {}, app.methods || {});
 
-    component.__bindings = {}; // for each path, stores an array of functions to be run when the path is set
-    component.__computed = []; // array of paths that are bound to computed values
+    // if (app.data.$) throw TypeError('Found $ as data property (reserved namespace)');
 
-    createView(component);
-    createViewModel(component);
+    app.__bindings = {}; // for each path, stores an array of functions to be run when the path is set
+    app.__computed = []; // array of paths that are bound to computed values
 
-    return component.data;
-  }
+    createView(app);
+    createViewModel(app);
 
-  function bindViewToViewModel(component, view, baseScope = '') { // doc is Array of nodes
-    return view.reduce(function (collection, node) {
-      if (!node.getAttribute || !node.hasAttribute('name') || isSafePath(node.getAttribute('name'))) {
-        var scope = (node.hasAttribute && node.hasAttribute('name') && node.getAttribute('name') !== '') ? JSONPath(baseScope, node.getAttribute('name')) : baseScope;
-
-        // test A: disable mustache template parsing due to replace with span
-        // if (node.nodeName === '#text') return collection.concat(splitTextNodeByTemplates(node, buildBinding(component), scope));
-        // else return collection.concat(traverseDOM(node, buildBinding(component), scope));
-
-        // test A live code
-        if (node.nodeName !== '#text') return collection.concat(traverseDOM(node, buildBinding(component), scope));
-        else return collection.concat(node);
-      }
-      return collection;
-    }, []);
+    return app.data;
   }
 
   var buildBindingByTypeAndReturnNodeToMount = {}; // used by buildBinding below. Moved out of the function because it should only be initialized once
 
-  buildBindingByTypeAndReturnNodeToMount.INPUT = function inputElements(component, node, scope) {
+  buildBindingByTypeAndReturnNodeToMount.INPUT = function inputElements(app, node, scope) {
     if (node.getAttribute('name')) {
-      touchBinding(component, scope);
+      if (!scope) scope = node.getAttribute('name');
+      touchBinding(app, scope);
       var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
-      saveBinding(component, scope, function (value) {
+      saveBinding(app, scope, function (value) {
         if (node[attr] != value) node[attr] = value;
       });
-      setEventListenersOnFormElements(component, node, scope, attr);
+      setEventListenersOnFormElements(app, node, scope, attr);
     }
   };
 
   ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
-    buildBindingByTypeAndReturnNodeToMount[type] = function otherFormElements(component, node, scope) {
+    buildBindingByTypeAndReturnNodeToMount[type] = function otherFormElements(app, node, scope) {
       if (node.getAttribute('name')) {
-        touchBinding(component, scope);
-        saveBinding(component, scope, function (value) {
+        if (!scope) scope = node.getAttribute('name');
+        touchBinding(app, scope);
+        saveBinding(app, scope, function (value) {
           if (node.value != value) node.value = value;
         });
-        setEventListenersOnFormElements(component, node, scope);
+        setEventListenersOnFormElements(app, node, scope);
       }
     };
   });
 
-  buildBindingByTypeAndReturnNodeToMount.LIST = function list(component, node, scope) {
-    var listParent = node.parentNode;
-    var listContainer = document.createElement('div');
-    listContainer.setAttribute('list', scope); // TODO remove when minified: convenience to identify in Dev tools
+  // buildBindingByTypeAndReturnNodeToMount.LISTX = function list(app, node, scope) {
+  //   var listParent = node.parentNode;
+  //   var listContainer = document.createElement('div');
+  //   listContainer.setAttribute('list', scope); // TODO remove when minified: convenience to identify in Dev tools
 
+  //   if (node.getAttribute('name')) {
+  //     var listItemContainerMaster = document.createDocumentFragment();
+  //     Array.from(node.cloneNode(true).childNodes).forEach(listItemContainerMaster.appendChild.bind(listItemContainerMaster));
+
+  //     touchBinding(app, node.getAttribute('name'));
+  //     saveBinding(app, node.getAttribute('name'), function (value) {
+  //       // console.log('SET LIST', app.target, scope, value)
+
+  //       var oldLength = listContainer.children.length;
+  //       var newLength = value.length;
+
+  //       if (newLength - oldLength < 0) {
+  //         // console.log('REMOVE FROM LIST', newLength - oldLength);
+  //         Array.from(listContainer.children).forEach(function (listItemNode, index) {
+  //           if (index < newLength) populateAllBindings(app, `${scope}.${index}`);
+  //           else listContainer.removeChild(listItemNode);
+  //         });
+
+  //       } else if (newLength - oldLength > 0) {
+  //         // console.log('ADD TO LIST', oldLength, newLength - oldLength);
+  //         var newListItemsContainer = document.createDocumentFragment();
+
+  //         var listItemContainer;
+
+  //         for (var pointer = oldLength; pointer < newLength; pointer++) {
+  //           listItemContainer = listItemContainerMaster.cloneNode(true);
+  //           Array.from(listItemContainer.childNodes).forEach(function (node) { // TODO: this code works when the child nodes dont contain mustaches. When I swap all mustaches with <spans> or <values>, I can use this again.
+  //             if (node.hasAttribute) node.setAttribute('name', ''.concat(pointer, node.hasAttribute('name') ? ('.' + node.getAttribute('name')) : ''));
+  //           });
+  //           newListItemsContainer.appendChild(listItemContainer);
+  //         }
+  //         // console.log('Array.from(newListItemsContainer.childNodes)', Array.from(newListItemsContainer.childNodes));
+  //         // bindViewToViewModel(app, Array.from(newListItemsContainer.childNodes), `${scope}`); // TODO replace with algorithm based on querySelectorAll, and diff with parent's work
+  //         populateAllBindings(app, `${scope}.`);
+  //         listContainer.appendChild(newListItemsContainer);
+  //       }
+  //     });
+  //   }
+  //   listParent.replaceChild(listContainer, node);
+  //   return listContainer;
+  // }
+
+  buildBindingByTypeAndReturnNodeToMount.SPAN = function span(app, node, scope) {
     if (node.getAttribute('name')) {
-      var listItemContainerMaster = document.createDocumentFragment();
-      Array.from(node.cloneNode(true).childNodes).forEach(listItemContainerMaster.appendChild.bind(listItemContainerMaster));
-
-      touchBinding(component, node.getAttribute('name'));
-      saveBinding(component, node.getAttribute('name'), function (value) {
-        // console.log('SET LIST', component.target, scope, value)
-
-        var oldLength = listContainer.children.length;
-        var newLength = value.length;
-
-        if (newLength - oldLength < 0) {
-          // console.log('REMOVE FROM LIST', newLength - oldLength);
-          Array.from(listContainer.children).forEach(function (listItemNode, index) {
-            if (index < newLength) populateView(component, `${scope}.${index}`);
-            else listContainer.removeChild(listItemNode);
-          });
-
-        } else if (newLength - oldLength > 0) {
-          // console.log('ADD TO LIST', oldLength, newLength - oldLength);
-          var newListItemsContainer = document.createDocumentFragment();
-
-          var listItemContainer;
-
-          for (var pointer = oldLength; pointer < newLength; pointer++) {
-            listItemContainer = listItemContainerMaster.cloneNode(true);
-            Array.from(listItemContainer.childNodes).forEach(function (node) { // TODO: this code works when the child nodes dont contain mustaches. When I swap all mustaches with <spans> or <values>, I can use this again.
-              if (node.hasAttribute) node.setAttribute('name', ''.concat(pointer, node.hasAttribute('name') ? ('.' + node.getAttribute('name')) : ''));
-            });
-            newListItemsContainer.appendChild(listItemContainer);
-          }
-          // console.log('Array.from(newListItemsContainer.childNodes)', Array.from(newListItemsContainer.childNodes));
-          bindViewToViewModel(component, Array.from(newListItemsContainer.childNodes), `${scope}`);
-          populateView(component, `${scope}.`);
-          listContainer.appendChild(newListItemsContainer);
-        }
-      });
-    }
-    listParent.replaceChild(listContainer, node);
-    return listContainer;
-  }
-
-  buildBindingByTypeAndReturnNodeToMount.SPAN = function span(component, node, scope) {
-    if (node.getAttribute('name')) {
-      // console.log('span', Object.keys(span))
-      touchBinding(component, scope);
-      saveBinding(component, scope, function (value) {
+      if (!scope) scope = node.getAttribute('name');
+      touchBinding(app, scope);
+      saveBinding(app, scope, function (value) {
         if (node.innerHTML != value) node.innerHTML = value;
       });
       node.innerHTML = '';
     }
   };
 
-  // test A: disable mustache template parsing due to replace with span
-  // buildBindingByTypeAndReturnNodeToMount['#text'] = function textNodes(component, node, scope) {
-  //   var matches = node.textContent.match(/{{(.+?)}}/g);
-  //   if (matches) {
-  //     var path = matches[0].replace(/[{}]/g, '').trim();
-  //     if (isSafePath(JSONPath(scope, path))) { // TODO move this earlier in the stack, before we build the bindings, or better yet right after we split the text nodes
-  //       touchBinding(component, JSONPath(scope, path));
-  //       saveBinding(component, JSONPath(scope, path), function (value) {
-  //         node.nodeValue = value;
-  //       });
-  //       node.textContent = '';
-  //     }
-  //   }
-  // };
 
-  function buildBinding(component, node, scope) {
 
-    if (typeof node === 'undefined') return _buildBinding;
-    else return _buildBinding(node, scope);
+  function selectFormElements(rootNode) {
+    return rootNode.querySelectorAll(formElementSelectors);
+  }
 
-    function _buildBinding(node, scope, traversalCallback) {
-      if (typeof node.nodeName !== 'undefined' && buildBindingByTypeAndReturnNodeToMount[node.nodeName]) {
-        if (['LIST', '#text'].indexOf(node.nodeName) === -1) traversalCallback();
-        return buildBindingByTypeAndReturnNodeToMount[node.nodeName](component, node, scope) || node;
-      } else {
-        traversalCallback();
-        return node;
+  function buildBindings([app, rootNode]) {
+    var leafNodeList = selectFormElements(rootNode);
+    if (leafNodeList) {
+      for (var leafNode of leafNodeList) {
+        if (isSafePath(leafNode.getAttribute('name')) && buildBindingByTypeAndReturnNodeToMount[leafNode.nodeName]) buildBindingByTypeAndReturnNodeToMount[leafNode.nodeName](app, leafNode);
       }
     }
+    return [app, rootNode];
   }
 
-  function buildView(component) {
-    if (component.template) return stringToDOMDocument((component.template[0] === '#') ? document.querySelector(component.template).innerHTML : component.template);
-    // test A: disable mustache template parsing due to replace with span
-    // else return Array.from(document.getElementById(component.target.slice(1)).childNodes);
-
-    // test A live code
-    else return stringToDOMDocument(document.getElementById(component.target.slice(1)).innerHTML);
+  /**
+   * Return a Node containing the app DOM
+   * @param {Object} app
+   */
+  function buildRootNode(app) {
+    if (app.template) return [app, stringToDOMDocument((app.template[0] === '#') ? document.querySelector(app.template).innerHTML : app.template)];
+    else return [app, document.getElementById(app.target.slice(1))];
   }
 
-  function createView(component) {
+  function createView(app) {
     pipe(
-      buildView,
-      function (view) {
-        return [component, bindViewToViewModel(component, view)];
-      },
-      function ([component, view]) {
-        populateView(component);
-        return [component, view];
-      },
-      function ([component, view]) {
-        mountViewToTarget(component, view);
-        if (component.mounted) component.mounted.call(component.data); // lifecycle hook
+      buildRootNode,
+      replaceMustachesWithSpans,
+      buildBindings,
+      populateAllBindings,
+      mountRootNode,
+      function ([app, rootNode]) {
+        if (app.mounted) app.mounted.call(app.data); // lifecycle hook
       }
-    )(component);
+    )(app);
   }
 
-  function createViewModel(component) {
-    component.__data = Object.assign({}, component.data);
-
-    component.data = new proxyfull(component.__data, {
+  function createViewModel(app) {
+    app.data = new proxyfull(Object.assign({}, app.data), {
       set: function (target, property, value, receiver, path) {
-        var result = patchViewOnModelChange(component).apply(this, arguments);
-        if (component.updated) component.updated.call(component.data, path, value);
+        var result = patchViewOnModelChange(app).apply(this, arguments);
+        if (app.updated) app.updated.call(app.data, path, value);
         return result;
       }
     });
 
-    if (component.created) component.created.call(component.data);
+    if (app.created) app.created.call(app.data);
   }
 
   function getPathValue(source, path) {
@@ -211,12 +180,6 @@
       }, source);
   }
 
-  function insertItemBetweenEachElementOfArray(targetArray, item) {
-    return targetArray.reduce(function (result, element) {
-      return result.concat(element, item);
-    }, []).slice(0, -1);
-  }
-
   function isSafePath(path) {
     return (path.slice(0, 11) !== 'constructor' && path.indexOf('.constructor') === -1); // check for XSS attack by trying to access constructors
   }
@@ -226,12 +189,16 @@
       .match(/[^\.].*/)[0];
   }
 
-  function mountViewToTarget(component, nodes) {
-    var target = document.getElementById(component.target.slice(1));
+  function mountRootNode([app, rootNode]) {
+    if (rootNode.id === app.target.slice(1)) return [app, rootNode];
+
+    var target = document.getElementById(app.target.slice(1));
     removeAllNodeChildren(target);
     var fragment = document.createDocumentFragment();
-    nodes.forEach(fragment.appendChild.bind(fragment));
+    Array.from(rootNode.childNodes).forEach(fragment.appendChild.bind(fragment));
+
     target.appendChild(fragment);
+    return [app, target];
   }
 
   function removeAllNodeChildren(node) {
@@ -240,38 +207,38 @@
     }
   }
 
-  function runWatcher(component, path, newValue) {
-    var watcher = getPathValue(component.watch, path);
-    if (typeof watcher === 'function') watcher.call(component.data, newValue, getPathValue(component.__data, path)); // TODO proxy the context to detect infinite loop conditions
+  function runWatcher(app, path, newValue) {
+    var watcher = getPathValue(app.watch, path);
+    if (typeof watcher === 'function') watcher.call(app.data, newValue, getPathValue(app.data, path)); // TODO proxy the context to detect infinite loop conditions
   }
 
   function patchViewOnModelChange(...args) {
-    const component = args[0];
+    const app = args[0];
     if (args.length === 1) return _patch;
     return _patch(...(args.slice(1)));
 
     function _patch(target, property, value, receiver, path, bulk) {
 
-      if (!bulk) runWatcher(component, path, value);
+      if (!bulk) runWatcher(app, path, value);
 
       // get computed value
-      if (typeof value === 'function') value = value.call(component.data);
+      if (typeof value === 'function') value = value.call(app.data);
 
       // only update if something actually wants the value
-      if (component.__bindings[path]) {
-        component.__bindings[path].forEach(function (binder) {
+      if (app.__bindings[path]) {
+        app.__bindings[path].forEach(function (binder) {
           binder(value);
         });
       }
 
       // update computed values
-      if (!bulk && component.__computed) component.__computed.forEach(function (path) {
+      if (!bulk && app.__computed) app.__computed.forEach(function (path) {
         // run watchers
-        var value = (getPathValue(component.__data, path) || function () {}).call(component.__data);
-        runWatcher(component, path, value);
+        var value = (getPathValue(app.data, path) || function () {}).call(Object.assign({}, app.data));
+        runWatcher(app, path, value); // TODO : why am I running the watched?
 
         // apply bindings
-        component.__bindings[path].forEach(function (binder) {
+        app.__bindings[path].forEach(function (binder) {
           binder(value);
         });
       });
@@ -289,15 +256,14 @@
     };
   }
 
-  function populateView(component, filter = '') {
-
-    Object.keys(component.__bindings).forEach(function (path) {
+  function populateAllBindings([app, rootNode, filter = '']) {
+    Object.keys(app.__bindings).forEach(function (path) {
       if (path.indexOf(filter) === 0) {
-        var value = getPathValue(component.data, path);
-        if (value) patchViewOnModelChange(component, null, null, value, null, path, true);
+        var value = getPathValue(app.data, path);
+        if (value) patchViewOnModelChange(app, null, null, value, null, path, true);
       }
     });
-    return component;
+    return [app, rootNode];
   }
 
   function proxyfull(original, handler, logger, basePath, isArray = false) {
@@ -332,18 +298,18 @@
 
   }
 
-  function saveBinding(component, path, binder) {
-    var value = getPathValue(component.data, path);
-    if (typeof value === 'function' && component.__computed.indexOf(path) === -1) component.__computed.push(path);
-    component.__bindings[path].push(binder);
+  function saveBinding(app, path, binder) {
+    var value = getPathValue(app.data, path);
+    if (typeof value === 'function' && app.__computed.indexOf(path) === -1) app.__computed.push(path);
+    app.__bindings[path].push(binder);
   }
 
-  function setEventListenersOnFormElements(component, node, scope, attribute = 'value') {
+  function setEventListenersOnFormElements(app, node, scope, attribute = 'value') {
     var events = ['onclick', 'onchange', 'onkeypress', 'oninput'];
-    var watcher = getPathValue(component.watch, node.getAttribute('name'));
-    if ((node.hasAttribute('no-bind') === false) && (component.watch === true || watcher === true || node.hasAttribute('bind')))
+    var watcher = getPathValue(app.watch, node.getAttribute('name'));
+    if ((node.hasAttribute('no-bind') === false) && (app.watch === true || watcher === true || node.hasAttribute('bind')))
       setEventListenersOnElement(node, function () {
-        if (node[attribute] !== getPathValue(component.data, scope)) setPathValue(component.data, scope, node[attribute]);
+        if (node[attribute] !== getPathValue(app.data, scope)) setPathValue(app.data, scope, node[attribute]);
       }, ...events);
 
     function setEventListenersOnElement(node, handler, ...events) {
@@ -364,91 +330,21 @@
     pointer[keys.slice(-1)] = value;
   }
 
-  // test A: disable mustache template parsing due to replace with span
-  // function splitTextNodeByTemplates(node, callback, scope) {
-  //   var splitArray = splitTextNodeByTemplatesIntoArray(node);
-  //   if (Array.isArray(splitArray)) {
-  //     splitArray.forEach(function (newNode) {
-  //       // TODO check if each node is safe with isSafePath IF it is a match type string
-  //       pipe(
-  //         callback,
-  //         function () {
-  //           node.parentNode.insertBefore(newNode, node);
-  //         }
-  //       )(newNode, scope);
-  //     });
-  //     node.parentNode.removeChild(node);
-  //     return splitArray;
-  //   } else {
-  //     callback(node, scope);
-  //     return node;
-  //   }
-  // }
-
-  // test A: disable mustache template parsing due to replace with span
-  // function splitTextNodeByTemplatesIntoArray(node) {
-
-  //   var matches = node.textContent.match(/{{(.+?)}}/g);
-  //   if (matches) return splitNodeTextContentByMatchesAndCreateTextNodes(node, matches);
-  //   return node; // keep as is: does not have template strings
-
-  //   function splitNodeTextContentByMatchesAndCreateTextNodes(node, matches) {
-
-  //     var result = matches
-  //       .reduce(
-  //         function (arrayOfTextToSplitByAllMatches, match) {
-
-  //           return arrayOfTextToSplitByAllMatches
-  //             .reduce(
-  //               function (arrayOfTextAlreadySplitByMatch, textToSplitByMatch) {
-  //                 return (textToSplitByMatch === match) ? arrayOfTextAlreadySplitByMatch.concat(textToSplitByMatch) : arrayOfTextAlreadySplitByMatch.concat(insertItemBetweenEachElementOfArray(textToSplitByMatch.split(match), match));
-  //               }, []
-  //             );
-
-  //         }, [node.textContent]
-  //       )
-  //       .map(
-  //         function (textValueAfterSplittingByAllMatches) {
-  //           return document.createTextNode(textValueAfterSplittingByAllMatches);
-  //         }
-  //       );
-  //     return result;
-
-  //   }
-
-  // }
-
-  function stringToDOMDocument(str) {
-
+  function stringToDOMDocument(stringHTML) {
     var doc = document.createElement('html');
-    doc.innerHTML = str.replace(/{{(.+?)}}/g, function (match, path) {
+    doc.innerHTML = stringHTML;
+    return doc.childNodes[1]; // the body element
+  }
+
+  function replaceMustachesWithSpans([app, rootNode]) {
+    rootNode.innerHTML = rootNode.innerHTML.replace(/{{(.+?)}}/g, function (match, path) {
       return `<span name="${path.trim()}"></span>`;
     });
-    return Array.from(doc.childNodes[1].childNodes);
+    return [app, rootNode];
   }
 
-  function touchBinding(component, path) {
-    component.__bindings[path] = component.__bindings[path] || [];
-  }
-
-  function traverseDOM(pointer, callback, baseScope = '') { // inspiration: http://www.javascriptcookbook.com/article/Traversing-DOM-subtrees-with-a-recursive-walk-the-DOM-function/
-    return callback(pointer, baseScope, function () {
-      var child = pointer.firstChild;
-      while (child) {
-        if (!child.getAttribute || !child.hasAttribute('name') || isSafePath(child.getAttribute('name'))) {
-
-          var scope = (child.hasAttribute && child.hasAttribute('name') && child.getAttribute('name') !== '') ? JSONPath(baseScope, child.getAttribute('name')) : baseScope;
-
-          // test A: disable mustache template parsing due to replace with span
-          // if (child.nodeName === '#text' && child.textContent.trim().length) splitTextNodeByTemplates(child, callback, scope);
-          // else traverseDOM(child, callback, scope);
-
-          // test A live code
-          traverseDOM(child, callback, scope);
-        }
-        child = child.nextSibling;
-      }
-    });
+  function touchBinding(app, path) {
+    app.__bindings[path] = app.__bindings[path] || [];
   }
 
   return butterfly;
