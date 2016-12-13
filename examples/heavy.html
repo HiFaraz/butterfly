@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Build fast, simple, and light-weight front-end apps with Butterfly</title>
+    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w="
+        crossorigin="anonymous" />-->
+    <link rel="stylesheet" href="https://bootswatch.com/cosmo/bootstrap.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="/styles/app.css" />
+</head>
+
+<body>
+    <div id="top" class="container">
+        <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-2"
+                        aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="#">
+                        <img src="styles/butterfly-white.png" height="20">
+                    </a>
+                </div>
+                <div class="navbar-collapse collapse" id="bs-example-navbar-collapse-2" aria-expanded="false" style="height: 0.8px;">
+                    <ul class="nav navbar-nav">
+                        <li><a href="#get-started">Get started</a></li>
+                        <li><a href="#simple-and-flexible">Simple and flexible</a></li>
+                        <li><a href="#demo">Demo</a></li>
+                        <li><a href="#demo-source-code">Demo source code</a></li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li><a href="https://github.com/HiFaraz/butterfly">GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <div class="jumbotron" style="margin-top: 2rem;">
+            <h1 id="timer">Render time: {{ renderTime }} ms. Weight: 2.5kb*</h1>
+            <p>Fast, simple, light-weight: pick three. Butterfly is a front-end library for building interactive views</p>
+            <small>* current render time (reload to try again), min + gzip</small>
+        </div>
+        <!--<div class="row">
+            <div class="col-lg-12">
+                <div class="page-header">
+                    <h1>Render your app faster than the eyes can see, with Butterfly</h1>
+                </div>
+            </div>
+        </div>-->
+        <h2 id="get-started">Get started in 10 seconds</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Your template</h3>
+                    </div>
+                    <div class="panel-body">
+                        <pre class="prettyprint"><code class="prettyprint">&lt;div id="welcome"&gt;
+    &lt;input type="text" name="message" bind&gt;
+    {{ message }}
+&lt;/div&gt;</code></pre>
+                    </div>
+                    <div class="panel-footer">The <code>bind</code> attribute tells Butterfly to apply two-way data binding on this textbox. </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Your component</h3>
+                    </div>
+                    <div class="panel-body">
+                        <pre class="prettyprint well"><code>var welcome = butterfly({
+    target: '#welcome',
+    data: { message: ''}
+});
+
+welcome.message = 'Hello World!';</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-success">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Your app view</h3>
+                    </div>
+                    <div class="panel-body" id="welcome">
+                        <input type="text" name="message" bind class="form-control">
+                        <span class="help-block lead"> {{ message }} </span>
+                        <list name="friends"> {{ name }}</list>
+                    </div>
+                </div>
+                <p><small><a href="#top">(back to top)</a></small></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-9" style="border-right: 1px solid #ccc">
+                <h2 id="simple-and-flexible">Simple and flexible</h2>
+                <p class="lead">Butterfly began with a question: can you balance simplicity <em>and</em> flexibility in front-end components?</p>
+                <p>These are the core ideas behind Butterfly:</p>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th class="col-sm-2">Task</th>
+                            <th class="col-sm-5">Want</th>
+                            <th class="col-sm-5">Avoid</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>View model updates</td>
+                            <td>
+                                <p>Write directly to a data object:</p>
+                                <p><code>component.property = newValue;</code></p>
+                            </td>
+                            <td>
+                                <dl>
+                                    <dt>Setting functions:</dt>
+                                    <dd>
+                                        <p><code>component.set('property', newValue);</code></p>
+                                    </dd>
+                                    <dt>Digest cycles / dirty checking clogging the CPU:</dt>
+                                    <dd>
+                                        <p><code>$scope.apply(function(){ $scope.property = newValue });</code></p>
+                                    </dd>
+                                </dl>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Data-binding</td>
+                            <td>
+                                <dl>
+                                    <dt>One-way binding by default</dt>
+                                    <dd>
+                                        <p>Bind the value of the textbox to the variable
+                                            <code>address.city</code> through the <code>name</code> attribute. However typing
+                                            in the textbox will not update the data model.</p>
+                                        <p><code>&lt;input type="text" name="address.city"&gt;</code></p>
+                                    </dd>
+                                    <dt>Two-way binding on a specific element</dt>
+                                    <dd>
+                                        <p>
+                                            Add two-way binding to the textbox from above through a
+                                            <code>bind</code> attribute.
+                                        </p>
+                                        <p><code>&lt;input type="text" name="address.city" bind&gt;</code></p>
+                                    </dd>
+                                    <dt>Two-way binding on a specific data model</dt>
+                                    <dd>
+                                        <p>
+                                            Add two-way binding only to <code>address.city</code> through the component configuration:
+                                        </p>
+                                        <p><code>watch: { 'address.city' : true }</code></p>
+                                    </dd>
+                                    <dt>Two-way binding on the entire data model</dt>
+                                    <dd>
+                                        <p>
+                                            Add two-way binding to the entire data model through the component configuration:
+                                        </p>
+                                        <p><code>watch: true</code></p>
+                                        <p>
+                                            In this case, you can remove two-way binding to a specific form element through an
+                                            <code>no-bind</code> attribute.
+                                        </p>
+                                        <p><code>&lt;input type="text" name="address.city" no-bind&gt;</code></p>
+                                    </dd>
+                                </dl>
+                            </td>
+                            <td>
+                                <dl>
+                                    <dt>One-way binding only:</dt>
+                                    <dd>
+                                        <p><code>&lt;input type="text" value={address.city}&gt;</code> (React)</p>
+                                    </dd>
+                                    <dt>Two-way binding only:</dt>
+                                    <dd>
+                                        <p><code>&lt;input type="text" ng-model="address.city"&gt;</code> (AngularJS)</p>
+                                        <p><code>&lt;input type="text" v-model="address.city"&gt;</code> (Vue.js)</p>
+                                    </dd>
+                                </dl>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Rendering DOM updates</td>
+                            <td>
+                                <dl>
+                                    <dt>Render updated values according to a map</dt>
+                                    <dd>
+                                        <p>
+                                            <p>Touch only the DOM elements mapped to the data model. This happens in the Butterfly
+                                                internals. It creates a map when you first load the component.</p>
+                                        </p>
+                                    </dd>
+                                </dl>
+                            </td>
+                            <td>
+                                <dl>
+                                    <dt>Re-writing the entire DOM on a data model update:</dt>
+                                    <dd>
+                                        <p><code>component.target.innerHTML = '...'</code></p>
+                                    </dd>
+                                    <dt>Scanning the real or virtual DOM to see what needs to be updated</dt>
+                                    <dd></dd>
+                                </dl>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>Butterfly also features: computed values, methods (in progress), and lifecycle hooks (created, mounted)</p>
+                <p><small><a href="#top">(back to top)</a></small></p>
+            </div>
+            <div class="col-md-3">
+                <h2>Status</h2>
+                <p class="bg-warning">Butterfly is in pre-release state.</p>
+                <p>It weighs ~ 2.5kb minified and gzipped.</p>
+                <p>Butterfly relies on ECMAScript 2015 Proxies. A limited functionality polyfill is available <a href="https://github.com/GoogleChrome/proxy-polyfill">here</a>.</p>
+                <p>There is a fully working demo below, and the demo source code is included in the bottom of the document.</p>
+                <p>The views below are dynamically generated. The view internals are not in the source HTML document.</p>
+                <p>Released under the MIT licence by <a href="https://github.com/HiFaraz">Faraz Syed</a>.</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="page-header">
+                    <h1 id="demo">Demo</h1>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-7">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Model views</h3>
+                    </div>
+                    <div id="person" class="panel-body">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="panel panel-success ">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Markdown preview of <code>address.country</code></h3>
+                    </div>
+                    <div id="preview" class="panel-body"></div>
+                </div>
+                <div class="panel panel-default ">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Another component</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p id="friend"></p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code>                            element by including the attribute <code>bind</code></p>
+                        <p><span class="label label-info">WATCHER</span> Has a watcher function that pushes data to the main
+                            component to the left in <code>#person</code>.</p>
+                    </div>
+                    <div class="panel-footer">
+                        <p><span class="label label-primary">COMPONENT</span> This component is defined separately from the
+                            component to the left.</p>
+                    </div>
+                </div>
+                <div class="panel panel-default ">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Update history</h3>
+                    </div>
+                    <div id="person-history" class="panel-body">
+                        {{ store }}
+                    </div>
+                    <div class="panel-footer">
+                        <p><span class="label label-primary">COMPONENT</span> The component to the left writes to this component
+                            whenever there is a data change event.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p><small><a href="#top">(back to top)</a></small></p>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="page-header">
+                    <h1 id="demo-source-code">Source code for demo</h1>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <pre id="codeView" class="prettyprint"></pre>
+                <p><small><a href="#top">(back to top)</a></small></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="page-header">
+                    <h1 id="roadmap">Roadmap for further development</h1>
+                </div>
+                <p class="lead">Butterfly is far from complete ...</p>
+                <p>Butterfly is blazingly fast and light for basic data-binding and manipulation, yet it needs more to be considered
+                    a full-powered library for making web apps:</p>
+                <ul>
+                    <li>Event handlers within templates for custom methods (e.g. button clicks)</li>
+                    <li>Element class manipulation</li>
+                    <li>Custom HTML tags?</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <footer class="footer">
+        <div class="container">
+            Built with love by <a href="https://github.com/HiFaraz">Faraz Syed</a>. Contact him at <a href="mailto:hello@farazsyed.com">hello@farazsyed.com</a>.
+            Butterfly code is released under the MIT licence.
+        </div>
+    </footer>
+    <script src="https://unpkg.com/marked@0.3.6"></script>
+    <script src="/js/butterfly.min.js"></script>
+    <script id="person-template" type="text/x-template">
+        <table class="table table-responsive table-striped table-hover">
+            <thead >
+                <tr>
+                    <th>Variable</td>
+                        <th>View(s)</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>firstName</code></td>
+                    <td>
+                        <!--you can enable two-way data binding on one specific form element by adding a `bind` attribute-->
+                        <p><input type="text" name="firstName" class="form-control" bind></p>
+                        <!--you can also output the model value as text by using <value name=" variable_name ">-->
+                        <p><span class="label label-primary">VALUE</span> <samp><value name="firstName"></samp>
+                        </p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code> element by including the attribute <code>bind</code></p>
+                        <p><span class="label label-info">WATCHER</span> Has a watcher function that interacts with another component
+                            located in <code>#friend</code></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>lastName</code></td>
+                    <td>
+                        <p><input type="text" name="lastName" class="form-control" bind></p>
+                        <p><span class="label label-primary">VALUE</span> <samp> {{ lastName }} </samp>
+                        </p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code> element by including the attribute <code>bind</code></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>fullName</code></td>
+                    <td>
+                        <p><input type="text" name="fullName" class="form-control"></p> <p><span class="label label-primary">VALUE</span> <samp> {{ fullName }} </samp></p>
+                        <p><span class="label label-info">COMPUTATION</span> This is a computed value, it will update on any model or
+                            view updates</p>
+                        <p><span class="label label-info">BINDING</span> No two-way data binding applied</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>age</code></td>
+                    <td>
+                        <p><input type="range" name="age" class="form-control"></p>
+                        <p><span class="label label-primary">VALUE</span> <samp> {{ age }} </samp></p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for elements bound to <code>age</code> by setting <code>watchers: { age: true }</code></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>actor</code></td>
+                    <td>
+                        <p><input type="checkbox" name="actor" class="form-control" no-bind></p>
+                        <!--you can disable two-way data binding on a single form element ONLY by adding a `no-bind` attribute, in case you allowed it globally or even by the `bind` attribute-->
+                        <p><span class="label label-primary">VALUE</span> <samp> {{ actor }} </samp></p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for elements bound to <code>actor</code> by setting <code>watchers: {actor: true }</code>, but disabled for this <code>&lt;input&gt;</code> element
+                            by including the attribute <code>no-bind</code></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>address.country</code></td>
+                    <td>
+                        <p><textarea name="address.country" class="form-control" bind></textarea></p>
+                        <p><span class="label label-primary">VALUE</span> <samp> {{ address.country }} </samp></p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;textarea&gt;</code> element by including the attribute <code>bind</code></p>
+                        <p><span class="label label-info">WATCHER</span> Has a watcher function that creates a markdown preview in <code>#preview</code></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>email</code></td>
+                    <td>
+                        <p><input type="text" name="emailFn"></p>
+                        <p><span class="label label-primary">VALUE</span> <samp> {{ emailFn }} </samp></p>
+                        <p><span class="label label-info">COMPUTATION</span> This is a computed value, presents the email address retreived from an AJAX call in lowercase.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>gender</code></td>
+                    <td>
+                        <p>
+                            <select name="gender" class="form-control" bind>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </p>
+                        <p><span class="label label-primary">VALUE</span> <samp> {{ gender }} </samp></p>
+                        <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;select&gt;</code> element by including the attribute <code>bind</code></p>
+                        <p><span class="label label-info">WATCHER</span> Has a watcher function that runs the <code>introduce</code> method, which adds the introduction text below</p>
+                        <blockquote>
+                            <p id="person-introduction"></p>
+                            <small> {{ fullName }} </small>
+                        </blockquote>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>friends</code></td>
+                    <td>
+                        <ul class="list-group">
+                            <list name="friends">
+                                <li class="list-group-item">
+                                    <p><input type="text" name="name" bind class="form-control"></p>
+                                    <p><span class="label label-primary">VALUE</span> <samp> {{ name }} </samp></p>
+                                    <p><span class="label label-info">BINDING</span> Two-way binding enabled for this <code>&lt;input&gt;</code> element by including the attribute <code>bind</code></p>
+                                </li>
+                            </list>
+                        </ul>
+                        <p><span class="label label-primary">LIST</span> This is an array of objects, each with a <code>name</code> property</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </script>
+    <script id="code">
+'use strict';
+
+// here's the code for the demo in the introduction
+var welcome = butterfly( { target: '#welcome', data: { message: ''} } );
+welcome.message = 'Hello World!';
+welcome.friends = [
+    {name: 'Emma'},
+    {name: 'David'},
+    {name: 'Jack'}
+];
+
+
+// before we begin, we're going to create a component that will store data update history from the main component through a lifecycle hook later on
+var personHistory = butterfly({
+    target: '#person-history',
+    data: {
+        store: ''
+    }
+});
+
+// we're also going to create component to display the rendering time in the page header. We'll call this from a lifecycle hook later on
+var timer = butterfly({
+    target: '#timer',
+    data: {
+        renderTime: ''
+    }
+});
+
+// let's start measuring how long it takes to render the main component!
+var renderStart = performance.now();
+
+// let's go! all you have to do is send an object to butterfly.
+// hang on to the returned object btw, you can do stuff with it later
+var person = butterfly(
+
+    // the component behaviour is fed as object properties
+    {
+
+        // specify the tag id where you want to render your component
+        target: '#person',
+
+        // enter your initial data
+        data : {
+            firstName: 'John',
+            lastName: 'Smith',
+            age: 30,
+            address: {
+                country: 'Canada'
+            },
+            actor: true,
+            friends: [
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                {name: 'Emma'},
+                {name: 'David'},
+                {name: 'Jack'},
+                ]
+        },
+
+        // you can have computed values too! These will overwrite any data values with the same name though, so be careful in naming them!
+        // these functions are called for each view update, including the initialization
+        // the context is bound to the component data, computed values, and methods
+        computed: {
+
+            // you can calculate data on every model/view update!
+            fullName: function() {
+
+                // return a value to pass it to the model
+                return this.firstName + ' ' + this.lastName;
+            },
+            emailFn: function() {
+                if (this.email) return this.email.toLowerCase();
+            }
+        },
+
+        // where would we be without some methods? here are some methods. everybody likes methods
+        methods: {
+
+            // as usual, the data model and computed values are bound to the context
+            introduce: function() {
+                document.getElementById('person-introduction').innerHTML = `Hi!<br><br>My name is ${this.fullName()} and my gender is ${this.gender}.<br><br>Lovely to meet you!`;
+            }
+        },
+
+        // create some watchers! get notified by input events and model updates
+        // to enable two-way binding on all variables, set `watch: true`
+        // instead of passing it an object
+        // watchers are called after data has changed but before it is written to the view
+        watch: {
+
+            // setting to `true` tells Butterfly to enable two-way data-binding on all form elements
+            actor: true,
+
+            // let's create a markdown preview of the result elsewhere in the document
+            address: {
+                country: function(newValue) {
+                    document.getElementById('preview').innerHTML = marked(newValue, { sanitize: true });
+                }
+            },
+
+            age: true,
+
+            gender: function() {
+
+                // let's run a method
+                this.introduce();
+            }
+        },
+
+        // this function is called once before the first render, when the view model is created
+        created: function() {
+
+            var vm = this;
+            vm.name = 'James';
+            vm.age = 25;
+            vm.actor = false;
+            
+            // asynchronous binding updates allowed! we define this function way down below
+            getResource('https://jsonplaceholder.typicode.com/comments/1')
+                .then(function(body) {
+
+                    // notice that email wasn't originally a property of the data object
+                    vm.email = body.email;
+                });
+        },
+
+        // this function is called after the first render, when the view has been mounted to the DOM
+        mounted: function() {
+
+            // here's the code for the rendering time measurement in the title
+            timer.renderTime = (Math.ceil(performance.now() - renderStart));
+        },
+
+        //this function is called whenever a data value changes
+        updated: function(path, value) {
+            
+            // let's update that history component we talked about. we're going to add to it as if it was just a regular part of our data model!
+            personHistory.store = personHistory.store + `${path} set to ${value}, `;
+        },
+        // you can also specify a template as a string. this will override whatever is already in the target element
+        template: '#person-template'
+    }
+);
+
+
+// you don't need to be inside your component object to update the data. let's change an existing value
+person.firstName = 'Maria';
+person.lastName = 'Anderson'
+person.address.country = '# Antartica\n* A land of wonder';
+person.actor = true;
+
+// and one more brand new variable
+person.gender = 'female';
+
+// this is a second component that `person` can interact with
+var friend = butterfly({
+    target: '#friend',
+    data: {
+        firstName: ''
+    },
+    watch: {
+
+        // let's push the new value to another Butterfly component
+        firstName: function(newValue) {
+        person.firstName = newValue;
+        }
+    },
+    template: '<input type="text" name="firstName" class="form-control" bind>'
+});
+
+// this is a utility function to make an AJAX request. it's not part of Butterfly. we'll use it down below to bind the view to a server response
+function getResource(url, callback) {
+
+    return new Promise(function(resolve,reject) {
+
+        var request = new XMLHttpRequest();
+        request.open('GET', url, true);
+        request.onload = function () {
+            if (request.readyState != 4 || request.status != 200) reject();
+            else resolve(JSON.parse(request.responseText));
+        }; 
+        try {
+            request.send();
+        }
+        catch (error) {
+            reject(error);
+        }
+
+    });
+
+}
+    </script>
+    <script>
+        // generate the code preview
+        document.getElementById('codeView').innerHTML = marked('```javascript\n'+document.getElementById('code').innerHTML+'\n```').trim();
+    </script>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+</body>
+
+</html>

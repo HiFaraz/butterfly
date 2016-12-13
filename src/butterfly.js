@@ -35,8 +35,14 @@
     return view.reduce(function (collection, node) {
       if (!node.getAttribute || !node.hasAttribute('name') || isSafePath(node.getAttribute('name'))) {
         var scope = (node.hasAttribute && node.hasAttribute('name') && node.getAttribute('name') !== '') ? JSONPath(baseScope, node.getAttribute('name')) : baseScope;
-        if (node.nodeName === '#text') return collection.concat(splitTextNodeByTemplates(node, buildBinding(component), scope));
-        else return collection.concat(traverseDOM(node, buildBinding(component), scope));
+
+        // test A: disable mustache template parsing due to replace with span
+        // if (node.nodeName === '#text') return collection.concat(splitTextNodeByTemplates(node, buildBinding(component), scope));
+        // else return collection.concat(traverseDOM(node, buildBinding(component), scope));
+
+        // test A live code
+        if (node.nodeName !== '#text') return collection.concat(traverseDOM(node, buildBinding(component), scope));
+        else return collection.concat(node);
       }
       return collection;
     }, []);
@@ -70,9 +76,10 @@
   buildBindingByTypeAndReturnNodeToMount.LIST = function list(component, node, scope) {
     var listParent = node.parentNode;
     var listContainer = document.createElement('div');
-    listContainer.setAttribute('list', ''); // TODO remove when minified: convenience to identify in Dev tools
+    listContainer.setAttribute('list', scope); // TODO remove when minified: convenience to identify in Dev tools
+
     if (node.getAttribute('name')) {
-      var listItemContainerMaster = document.createElement('div');
+      var listItemContainerMaster = document.createDocumentFragment();
       Array.from(node.cloneNode(true).childNodes).forEach(listItemContainerMaster.appendChild.bind(listItemContainerMaster));
 
       touchBinding(component, node.getAttribute('name'));
@@ -90,18 +97,16 @@
           });
 
         } else if (newLength - oldLength > 0) {
-          // console.log('ADD TO LIST', newLength - oldLength);
+          // console.log('ADD TO LIST', oldLength, newLength - oldLength);
           var newListItemsContainer = document.createDocumentFragment();
 
           var listItemContainer;
 
           for (var pointer = oldLength; pointer < newLength; pointer++) {
             listItemContainer = listItemContainerMaster.cloneNode(true);
-            listItemContainerMaster.setAttribute('list-item', ''); // TODO remove when minified: convenience to identify in Dev tools
-            listItemContainer.setAttribute('name', pointer); // TODO: when I swap mustaches with <spans>, get rid of this and use the code below, and change the container back to a doc frag. This adds O(n) extra elements!
-            // Array.from(listItemContainer.childNodes).forEach(function (node) { // TODO: this code works when the child nodes dont contain mustaches. When I swap all mustaches with <spans> or <values>, I can use this again.
-            //   if (node.nodeName !== '#text') node.setAttribute('name', ''.concat(pointer, node.hasAttribute('name') ? ('.' + node.getAttribute('name')) : ''));
-            // });
+            Array.from(listItemContainer.childNodes).forEach(function (node) { // TODO: this code works when the child nodes dont contain mustaches. When I swap all mustaches with <spans> or <values>, I can use this again.
+              if (node.hasAttribute) node.setAttribute('name', ''.concat(pointer, node.hasAttribute('name') ? ('.' + node.getAttribute('name')) : ''));
+            });
             newListItemsContainer.appendChild(listItemContainer);
           }
           // console.log('Array.from(newListItemsContainer.childNodes)', Array.from(newListItemsContainer.childNodes));
@@ -115,8 +120,9 @@
     return listContainer;
   }
 
-  buildBindingByTypeAndReturnNodeToMount.VALUE = function inputElements(component, node, scope) {
+  buildBindingByTypeAndReturnNodeToMount.SPAN = function span(component, node, scope) {
     if (node.getAttribute('name')) {
+      // console.log('span', Object.keys(span))
       touchBinding(component, scope);
       saveBinding(component, scope, function (value) {
         if (node.innerHTML != value) node.innerHTML = value;
@@ -125,19 +131,20 @@
     }
   };
 
-  buildBindingByTypeAndReturnNodeToMount['#text'] = function textNodes(component, node, scope) {
-    var matches = node.textContent.match(/{{(.+?)}}/g);
-    if (matches) {
-      var path = matches[0].replace(/[{}]/g, '').trim();
-      if (isSafePath(JSONPath(scope, path))) { // TODO move this earlier in the stack, before we build the bindings, or better yet right after we split the text nodes
-        touchBinding(component, JSONPath(scope, path));
-        saveBinding(component, JSONPath(scope, path), function (value) {
-          node.nodeValue = value;
-        });
-        node.textContent = '';
-      }
-    }
-  };
+  // test A: disable mustache template parsing due to replace with span
+  // buildBindingByTypeAndReturnNodeToMount['#text'] = function textNodes(component, node, scope) {
+  //   var matches = node.textContent.match(/{{(.+?)}}/g);
+  //   if (matches) {
+  //     var path = matches[0].replace(/[{}]/g, '').trim();
+  //     if (isSafePath(JSONPath(scope, path))) { // TODO move this earlier in the stack, before we build the bindings, or better yet right after we split the text nodes
+  //       touchBinding(component, JSONPath(scope, path));
+  //       saveBinding(component, JSONPath(scope, path), function (value) {
+  //         node.nodeValue = value;
+  //       });
+  //       node.textContent = '';
+  //     }
+  //   }
+  // };
 
   function buildBinding(component, node, scope) {
 
@@ -157,8 +164,11 @@
 
   function buildView(component) {
     if (component.template) return stringToDOMDocument((component.template[0] === '#') ? document.querySelector(component.template).innerHTML : component.template);
-    else return Array.from(document.getElementById(component.target.slice(1)).childNodes);
-    // else return stringToDOMDocument(document.getElementById(component.target.slice(1)).innerHTML);
+    // test A: disable mustache template parsing due to replace with span
+    // else return Array.from(document.getElementById(component.target.slice(1)).childNodes);
+
+    // test A live code
+    else return stringToDOMDocument(document.getElementById(component.target.slice(1)).innerHTML);
   }
 
   function createView(component) {
@@ -280,6 +290,7 @@
   }
 
   function populateView(component, filter = '') {
+
     Object.keys(component.__bindings).forEach(function (path) {
       if (path.indexOf(filter) === 0) {
         var value = getPathValue(component.data, path);
@@ -353,61 +364,66 @@
     pointer[keys.slice(-1)] = value;
   }
 
-  function splitTextNodeByTemplates(node, callback, scope) {
-    var splitArray = splitTextNodeByTemplatesIntoArray(node);
-    if (Array.isArray(splitArray)) {
-      splitArray.forEach(function (newNode) {
-        // TODO check if each node is safe with isSafePath IF it is a match type string
-        pipe(
-          callback,
-          function () {
-            node.parentNode.insertBefore(newNode, node);
-          }
-        )(newNode, scope);
-      });
-      node.parentNode.removeChild(node);
-      return splitArray;
-    } else {
-      callback(node, scope);
-      return node;
-    }
-  }
+  // test A: disable mustache template parsing due to replace with span
+  // function splitTextNodeByTemplates(node, callback, scope) {
+  //   var splitArray = splitTextNodeByTemplatesIntoArray(node);
+  //   if (Array.isArray(splitArray)) {
+  //     splitArray.forEach(function (newNode) {
+  //       // TODO check if each node is safe with isSafePath IF it is a match type string
+  //       pipe(
+  //         callback,
+  //         function () {
+  //           node.parentNode.insertBefore(newNode, node);
+  //         }
+  //       )(newNode, scope);
+  //     });
+  //     node.parentNode.removeChild(node);
+  //     return splitArray;
+  //   } else {
+  //     callback(node, scope);
+  //     return node;
+  //   }
+  // }
 
-  function splitTextNodeByTemplatesIntoArray(node) {
+  // test A: disable mustache template parsing due to replace with span
+  // function splitTextNodeByTemplatesIntoArray(node) {
 
-    var matches = node.textContent.match(/{{(.+?)}}/g);
-    if (matches) return splitNodeTextContentByMatchesAndCreateTextNodes(node, matches);
-    return node; // keep as is: does not have template strings
+  //   var matches = node.textContent.match(/{{(.+?)}}/g);
+  //   if (matches) return splitNodeTextContentByMatchesAndCreateTextNodes(node, matches);
+  //   return node; // keep as is: does not have template strings
 
-    function splitNodeTextContentByMatchesAndCreateTextNodes(node, matches) {
+  //   function splitNodeTextContentByMatchesAndCreateTextNodes(node, matches) {
 
-      var result = matches
-        .reduce(
-          function (arrayOfTextToSplitByAllMatches, match) {
+  //     var result = matches
+  //       .reduce(
+  //         function (arrayOfTextToSplitByAllMatches, match) {
 
-            return arrayOfTextToSplitByAllMatches
-              .reduce(
-                function (arrayOfTextAlreadySplitByMatch, textToSplitByMatch) {
-                  return (textToSplitByMatch === match) ? arrayOfTextAlreadySplitByMatch.concat(textToSplitByMatch) : arrayOfTextAlreadySplitByMatch.concat(insertItemBetweenEachElementOfArray(textToSplitByMatch.split(match), match));
-                }, []
-              );
+  //           return arrayOfTextToSplitByAllMatches
+  //             .reduce(
+  //               function (arrayOfTextAlreadySplitByMatch, textToSplitByMatch) {
+  //                 return (textToSplitByMatch === match) ? arrayOfTextAlreadySplitByMatch.concat(textToSplitByMatch) : arrayOfTextAlreadySplitByMatch.concat(insertItemBetweenEachElementOfArray(textToSplitByMatch.split(match), match));
+  //               }, []
+  //             );
 
-          }, [node.textContent]
-        )
-        .map(
-          function (textValueAfterSplittingByAllMatches) {
-            return document.createTextNode(textValueAfterSplittingByAllMatches);
-          }
-        );
-      return result;
+  //         }, [node.textContent]
+  //       )
+  //       .map(
+  //         function (textValueAfterSplittingByAllMatches) {
+  //           return document.createTextNode(textValueAfterSplittingByAllMatches);
+  //         }
+  //       );
+  //     return result;
 
-    }
+  //   }
 
-  }
+  // }
 
   function stringToDOMDocument(str) {
+
     var doc = document.createElement('html');
-    doc.innerHTML = str;
+    doc.innerHTML = str.replace(/{{(.+?)}}/g, function (match, path) {
+      return `<span name="${path.trim()}"></span>`;
+    });
     return Array.from(doc.childNodes[1].childNodes);
   }
 
@@ -420,9 +436,15 @@
       var child = pointer.firstChild;
       while (child) {
         if (!child.getAttribute || !child.hasAttribute('name') || isSafePath(child.getAttribute('name'))) {
+
           var scope = (child.hasAttribute && child.hasAttribute('name') && child.getAttribute('name') !== '') ? JSONPath(baseScope, child.getAttribute('name')) : baseScope;
-          if (child.nodeName === '#text' && child.textContent.trim().length) splitTextNodeByTemplates(child, callback, scope);
-          else traverseDOM(child, callback, scope);
+
+          // test A: disable mustache template parsing due to replace with span
+          // if (child.nodeName === '#text' && child.textContent.trim().length) splitTextNodeByTemplates(child, callback, scope);
+          // else traverseDOM(child, callback, scope);
+
+          // test A live code
+          traverseDOM(child, callback, scope);
         }
         child = child.nextSibling;
       }
