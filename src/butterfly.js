@@ -69,7 +69,7 @@
 
   buildBindingByTypeAndReturnNodeToMount.LIST = function list(component, node, scope) {
     var listParent = node.parentNode;
-    var listContainer = document.createElement('div');
+    var listContainer = listParent.cloneNode(false);
     if (node.getAttribute('name')) {
       var listItemContainerMaster = document.createDocumentFragment();
       Array.from(node.cloneNode(true).childNodes).forEach(listItemContainerMaster.appendChild.bind(listItemContainerMaster));
@@ -106,7 +106,7 @@
         }
       });
     }
-    listParent.replaceChild(listContainer, node);
+    listParent.parentNode.replaceChild(listContainer, listParent);
     return listContainer;
   }
 
