@@ -36,102 +36,111 @@
     return app.data;
   }
 
-  var buildBindingByTypeAndReturnNodeToMount = {}; // used by buildBinding below. Moved out of the function because it should only be initialized once
+  var bindingBuildersByNodeName = {}; // used by buildBinding below. Moved out of the function because it should only be initialized once
 
-  buildBindingByTypeAndReturnNodeToMount.INPUT = function inputElements(app, node, scope) {
-    if (node.getAttribute('name')) {
-      if (!scope) scope = node.getAttribute('name');
-      touchBinding(app, scope);
-      var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
-      saveBinding(app, scope, function (value) {
-        if (node[attr] != value) node[attr] = value;
-      });
-      setEventListenersOnFormElements(app, node, scope, attr);
-    }
+  bindingBuildersByNodeName.INPUT = function inputElements(app, node, scope) {
+    touchBinding(app, scope);
+    var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
+    saveBinding(app, scope, function (value) {
+      if (node[attr] != value) node[attr] = value;
+    });
+    setEventListenersOnFormElements(app, node, scope, attr);
   };
 
   ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
-    buildBindingByTypeAndReturnNodeToMount[type] = function otherFormElements(app, node, scope) {
-      if (node.getAttribute('name')) {
-        if (!scope) scope = node.getAttribute('name');
-        touchBinding(app, scope);
-        saveBinding(app, scope, function (value) {
-          if (node.value != value) node.value = value;
-        });
-        setEventListenersOnFormElements(app, node, scope);
-      }
+    bindingBuildersByNodeName[type] = function otherFormElements(app, node, scope) {
+      touchBinding(app, scope);
+      saveBinding(app, scope, function (value) {
+        if (node.value != value) node.value = value;
+      });
+      setEventListenersOnFormElements(app, node, scope);
     };
   });
 
-  // buildBindingByTypeAndReturnNodeToMount.LISTX = function list(app, node, scope) {
-  //   var listParent = node.parentNode;
-  //   var listContainer = document.createElement('div');
-  //   listContainer.setAttribute('list', scope); // TODO remove when minified: convenience to identify in Dev tools
-
-  //   if (node.getAttribute('name')) {
-  //     var listItemContainerMaster = document.createDocumentFragment();
-  //     Array.from(node.cloneNode(true).childNodes).forEach(listItemContainerMaster.appendChild.bind(listItemContainerMaster));
-
-  //     touchBinding(app, node.getAttribute('name'));
-  //     saveBinding(app, node.getAttribute('name'), function (value) {
-  //       // console.log('SET LIST', app.target, scope, value)
-
-  //       var oldLength = listContainer.children.length;
-  //       var newLength = value.length;
-
-  //       if (newLength - oldLength < 0) {
-  //         // console.log('REMOVE FROM LIST', newLength - oldLength);
-  //         Array.from(listContainer.children).forEach(function (listItemNode, index) {
-  //           if (index < newLength) populateAllBindings(app, `${scope}.${index}`);
-  //           else listContainer.removeChild(listItemNode);
-  //         });
-
-  //       } else if (newLength - oldLength > 0) {
-  //         // console.log('ADD TO LIST', oldLength, newLength - oldLength);
-  //         var newListItemsContainer = document.createDocumentFragment();
-
-  //         var listItemContainer;
-
-  //         for (var pointer = oldLength; pointer < newLength; pointer++) {
-  //           listItemContainer = listItemContainerMaster.cloneNode(true);
-  //           Array.from(listItemContainer.childNodes).forEach(function (node) { // TODO: this code works when the child nodes dont contain mustaches. When I swap all mustaches with <spans> or <values>, I can use this again.
-  //             if (node.hasAttribute) node.setAttribute('name', ''.concat(pointer, node.hasAttribute('name') ? ('.' + node.getAttribute('name')) : ''));
-  //           });
-  //           newListItemsContainer.appendChild(listItemContainer);
-  //         }
-  //         // console.log('Array.from(newListItemsContainer.childNodes)', Array.from(newListItemsContainer.childNodes));
-  //         // bindViewToViewModel(app, Array.from(newListItemsContainer.childNodes), `${scope}`); // TODO replace with algorithm based on querySelectorAll, and diff with parent's work
-  //         populateAllBindings(app, `${scope}.`);
-  //         listContainer.appendChild(newListItemsContainer);
-  //       }
-  //     });
-  //   }
-  //   listParent.replaceChild(listContainer, node);
-  //   return listContainer;
-  // }
-
-  buildBindingByTypeAndReturnNodeToMount.SPAN = function span(app, node, scope) {
-    if (node.getAttribute('name')) {
-      if (!scope) scope = node.getAttribute('name');
-      touchBinding(app, scope);
-      saveBinding(app, scope, function (value) {
-        if (node.innerHTML != value) node.innerHTML = value;
-      });
-      node.innerHTML = '';
-    }
+  bindingBuildersByNodeName.SPAN = function span(app, node, scope) {
+    touchBinding(app, scope);
+    saveBinding(app, scope, function (value) {
+      if (node.innerHTML != value) node.innerHTML = value;
+    });
+    node.innerHTML = '';
   };
-
-
 
   function selectFormElements(rootNode) {
     return rootNode.querySelectorAll(formElementSelectors);
   }
 
-  function buildBindings([app, rootNode]) {
-    var leafNodeList = selectFormElements(rootNode);
-    if (leafNodeList) {
-      for (var leafNode of leafNodeList) {
-        if (isSafePath(leafNode.getAttribute('name')) && buildBindingByTypeAndReturnNodeToMount[leafNode.nodeName]) buildBindingByTypeAndReturnNodeToMount[leafNode.nodeName](app, leafNode);
+  function selectListElements(rootNode) {
+    return rootNode.querySelectorAll('list');
+  }
+
+  function buildBindingsForFormElements([app, rootNode], baseScope = '') {
+    var formElementNodeList = selectFormElements(rootNode);
+    if (formElementNodeList) {
+      for (var formElementNode of formElementNodeList) {
+        if (isSafePath(formElementNode.getAttribute('name')) && bindingBuildersByNodeName[formElementNode.nodeName]) bindingBuildersByNodeName[formElementNode.nodeName](app, formElementNode, JSONPath(baseScope, formElementNode.getAttribute('name')));
+      }
+    }
+    return [app, rootNode];
+  }
+
+  function bindingBuilderForListNodes(app, node, scope = '') {
+    var listParent = node.parentNode;
+    var listContainer = document.createElement('div');
+
+    if (node.getAttribute('name') !== '') {
+      scope = node.getAttribute('name');
+      listContainer.setAttribute('list', scope); // TODO remove when minified: convenience to identify in Dev tools
+
+      var listItemContainerMaster = document.createDocumentFragment();
+      Array.from(node.cloneNode(true).childNodes).forEach(listItemContainerMaster.appendChild.bind(listItemContainerMaster));
+
+      touchBinding(app, node.getAttribute('name'));
+      saveBinding(app, node.getAttribute('name'), function (value) {
+        // console.log('SET LIST', app.target, scope, value)
+
+        var oldLength = listContainer.children.length;
+        var newLength = value.length;
+
+        if (newLength - oldLength < 0) {
+          // console.log('REMOVE FROM LIST', newLength - oldLength);
+          if (newLength === 0) listContainer.innerText = '';
+          else Array.from(listContainer.children).forEach(function (listItemNode, index) {
+            if (index < newLength) populateAllBindings([app, newListItemsContainer, scope + '.' + pointer]);
+            else listContainer.removeChild(listItemNode);
+            // TODO remove unused bindings
+          });
+
+        } else if (newLength - oldLength > 0) {
+          // console.log('ADD TO LIST', oldLength, newLength - oldLength);
+          var newListItemsContainer = document.createDocumentFragment();
+
+          var listItemContainer;
+
+          for (var pointer = oldLength; pointer < newLength; pointer++) {
+            var listItemContainer = listItemContainerMaster.cloneNode(true);
+
+            // this code is really for the old depth first search from the first version
+            // Array.from(listItemContainer.childNodes).forEach(function (node) { // TODO: this code works when the child nodes dont contain mustaches. When I swap all mustaches with <spans> or <values>, I can use this again.
+            //   // if (node.hasAttribute) node.setAttribute('name', ''.concat(pointer, node.hasAttribute('name') ? ('.' + node.getAttribute('name')) : ''));
+            // });
+
+            buildBindingsForFormElements([app, listItemContainer], `${scope}.${pointer}`);
+
+            newListItemsContainer.appendChild(listItemContainer);
+          }
+          populateAllBindings([app, newListItemsContainer, scope + '.']);
+          listContainer.appendChild(newListItemsContainer);
+        }
+      });
+    }
+    listParent.replaceChild(listContainer, node);
+  }
+
+  function buildBindingsForListElements([app, rootNode]) {
+    var listElementNodeList = selectListElements(rootNode);
+    if (listElementNodeList) {
+      for (var listElementNode of listElementNodeList) {
+        if (isSafePath(listElementNode.getAttribute('name'))) bindingBuilderForListNodes(app, listElementNode);
       }
     }
     return [app, rootNode];
@@ -150,7 +159,8 @@
     pipe(
       buildRootNode,
       replaceMustachesWithSpans,
-      buildBindings,
+      buildBindingsForListElements,
+      buildBindingsForFormElements,
       populateAllBindings,
       mountRootNode,
       function ([app, rootNode]) {
