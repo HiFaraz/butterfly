@@ -69,9 +69,10 @@
 
   buildBindingByTypeAndReturnNodeToMount.LIST = function list(component, node, scope) {
     var listParent = node.parentNode;
-    var listContainer = listParent.cloneNode(false);
+    var listContainer = document.createElement('div');
+    listContainer.setAttribute('list', ''); // TODO remove when minified: convenience to identify in Dev tools
     if (node.getAttribute('name')) {
-      var listItemContainerMaster = document.createDocumentFragment();
+      var listItemContainerMaster = document.createElement('div');
       Array.from(node.cloneNode(true).childNodes).forEach(listItemContainerMaster.appendChild.bind(listItemContainerMaster));
 
       touchBinding(component, node.getAttribute('name'));
@@ -80,33 +81,37 @@
 
         var oldLength = listContainer.children.length;
         var newLength = value.length;
-        var diffLength = newLength - oldLength;
 
-        if (diffLength < 0) {
-          // console.log('REMOVE FROM LIST', diffLength);
+        if (newLength - oldLength < 0) {
+          // console.log('REMOVE FROM LIST', newLength - oldLength);
           Array.from(listContainer.children).forEach(function (listItemNode, index) {
             if (index < newLength) populateView(component, `${scope}.${index}`);
             else listContainer.removeChild(listItemNode);
           });
 
-        } else if (diffLength > 0) {
-          // console.log('ADD TO LIST', diffLength);
+        } else if (newLength - oldLength > 0) {
+          // console.log('ADD TO LIST', newLength - oldLength);
           var newListItemsContainer = document.createDocumentFragment();
 
+          var listItemContainer;
+
           for (var pointer = oldLength; pointer < newLength; pointer++) {
-            var listItemContainer = listItemContainerMaster.cloneNode(true);
-            Array.from(listItemContainer.childNodes).forEach(function (node) {
-              if (node.hasAttribute && node.hasAttribute('name')) node.setAttribute('name', pointer + '.' + node.getAttribute('name'));
-            })
-            bindViewToViewModel(component, Array.from(listItemContainer.childNodes), `${scope}.${pointer}`);
+            listItemContainer = listItemContainerMaster.cloneNode(true);
+            listItemContainerMaster.setAttribute('list-item', ''); // TODO remove when minified: convenience to identify in Dev tools
+            listItemContainer.setAttribute('name', pointer); // TODO: when I swap mustaches with <spans>, get rid of this and use the code below, and change the container back to a doc frag. This adds O(n) extra elements!
+            // Array.from(listItemContainer.childNodes).forEach(function (node) { // TODO: this code works when the child nodes dont contain mustaches. When I swap all mustaches with <spans> or <values>, I can use this again.
+            //   if (node.nodeName !== '#text') node.setAttribute('name', ''.concat(pointer, node.hasAttribute('name') ? ('.' + node.getAttribute('name')) : ''));
+            // });
             newListItemsContainer.appendChild(listItemContainer);
           }
+          // console.log('Array.from(newListItemsContainer.childNodes)', Array.from(newListItemsContainer.childNodes));
+          bindViewToViewModel(component, Array.from(newListItemsContainer.childNodes), `${scope}`);
           populateView(component, `${scope}.`);
           listContainer.appendChild(newListItemsContainer);
         }
       });
     }
-    listParent.parentNode.replaceChild(listContainer, listParent);
+    listParent.replaceChild(listContainer, node);
     return listContainer;
   }
 
@@ -266,7 +271,7 @@
   }
 
   function pipe(...funcs) {
-    return function (...args) {
+    return function _pipe(...args) {
       return funcs.reduce((value, fn, index) => {
         const result = (index == 0) ? fn.apply(this, value) : fn.call(this, value);
         return result;
