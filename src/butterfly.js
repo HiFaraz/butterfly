@@ -416,7 +416,7 @@
       while (child) {
         if (!child.getAttribute || !child.hasAttribute('name') || isSafePath(child.getAttribute('name'))) {
           var scope = (child.hasAttribute && child.hasAttribute('name') && child.getAttribute('name') !== '') ? JSONPath(baseScope, child.getAttribute('name')) : baseScope;
-          if (child.nodeName === '#text') splitTextNodeByTemplates(child, callback, scope);
+          if (child.nodeName === '#text' && child.textContent.trim().length) splitTextNodeByTemplates(child, callback, scope);
           else traverseDOM(child, callback, scope);
         }
         child = child.nextSibling;
