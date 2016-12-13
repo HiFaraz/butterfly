@@ -93,13 +93,14 @@
           // console.log('ADD TO LIST', diffLength);
           var newListItemsContainer = document.createDocumentFragment();
 
-          value.forEach(function (listValue, index) {
-            if (index >= oldLength) {
-              var listItemContainer = listItemContainerMaster.cloneNode(true);
-              bindViewToViewModel(component, Array.from(listItemContainer.childNodes), `${scope}.${index}`);
-              newListItemsContainer.appendChild(listItemContainer);
-            } else populateView(component, `${scope}.${index}`);
-          });
+          for (var pointer = oldLength; pointer < newLength; pointer++) {
+            var listItemContainer = listItemContainerMaster.cloneNode(true);
+            Array.from(listItemContainer.childNodes).forEach(function (node) {
+              if (node.hasAttribute && node.hasAttribute('name')) node.setAttribute('name', pointer + '.' + node.getAttribute('name'));
+            })
+            bindViewToViewModel(component, Array.from(listItemContainer.childNodes), `${scope}.${pointer}`);
+            newListItemsContainer.appendChild(listItemContainer);
+          }
           populateView(component, `${scope}.`);
           listContainer.appendChild(newListItemsContainer);
         }
