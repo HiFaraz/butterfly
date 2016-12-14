@@ -39,17 +39,15 @@
   var bindingBuildersByNodeName = {}; // used by buildBinding below. Moved out of the function because it should only be initialized once
 
   bindingBuildersByNodeName.INPUT = function inputElements(app, node, scope) {
-    touchBinding(app, scope);
-    var attr = (node.getAttribute('type') === 'checkbox') ? 'checked' : 'value';
+    var [attribute, event] = (node.getAttribute('type') === 'checkbox') ? ['checked', 'onchange'] : ['value', 'oninput'];
     saveBinding(app, scope, function (value) {
-      if (node[attr] != value) node[attr] = value;
+      if (node[attribute] != value) node[attribute] = value;
     });
-    setEventListenersOnFormElements(app, node, scope, attr);
+    setEventListenersOnFormElements(app, node, scope, attribute, event);
   };
 
   ['RANGE', 'SELECT', 'TEXTAREA'].forEach(function buildOtherFormElementBindings(type) {
     bindingBuildersByNodeName[type] = function otherFormElements(app, node, scope) {
-      touchBinding(app, scope);
       saveBinding(app, scope, function (value) {
         if (node.value != value) node.value = value;
       });
@@ -58,11 +56,10 @@
   });
 
   bindingBuildersByNodeName.SPAN = function span(app, node, scope) {
-    touchBinding(app, scope);
     saveBinding(app, scope, function (value) {
-      if (node.innerHTML != value) node.innerHTML = value;
+      if (node.textContent != value) node.textContent = value;
     });
-    node.innerHTML = '';
+    node.textContent = '';
   };
 
   function selectFormElements(rootNode) {
@@ -77,25 +74,24 @@
     var formElementNodeList = selectFormElements(rootNode);
     if (formElementNodeList) {
       for (var formElementNode of formElementNodeList) {
-        if (isSafePath(formElementNode.getAttribute('name')) && bindingBuildersByNodeName[formElementNode.nodeName]) bindingBuildersByNodeName[formElementNode.nodeName](app, formElementNode, JSONPath(baseScope, formElementNode.getAttribute('name')));
+        const name = formElementNode.getAttribute('name');
+        if (isSafePath(name)) bindingBuildersByNodeName[formElementNode.nodeName](app, formElementNode, JSONPath(baseScope, name));
       }
     }
     return [app, rootNode];
   }
 
-  function bindingBuilderForListNodes(app, node, scope = '') {
+  function bindingBuilderForListNodes(app, node, scope) {
     var listParent = node.parentNode;
     var listContainer = document.createElement('div');
 
-    if (node.getAttribute('name') !== '') {
-      scope = node.getAttribute('name');
+    if (scope && scope !== '') {
       listContainer.setAttribute('list', scope); // TODO remove when minified: convenience to identify in Dev tools
 
       var listItemContainerMaster = document.createDocumentFragment();
       Array.from(node.cloneNode(true).childNodes).forEach(listItemContainerMaster.appendChild.bind(listItemContainerMaster));
 
-      touchBinding(app, node.getAttribute('name'));
-      saveBinding(app, node.getAttribute('name'), function (value) {
+      saveBinding(app, scope, function (value) {
         // console.log('SET LIST', app.target, scope, value)
 
         var oldLength = listContainer.children.length;
@@ -133,14 +129,15 @@
         }
       });
     }
-    listParent.replaceChild(listContainer, node);
+    requestAnimationFrame(() => listParent.replaceChild(listContainer, node));
   }
 
   function buildBindingsForListElements([app, rootNode]) {
     var listElementNodeList = selectListElements(rootNode);
     if (listElementNodeList) {
       for (var listElementNode of listElementNodeList) {
-        if (isSafePath(listElementNode.getAttribute('name'))) bindingBuilderForListNodes(app, listElementNode);
+        const name = listElementNode.getAttribute('name');
+        if (isSafePath(name)) bindingBuilderForListNodes(app, listElementNode, name);
       }
     }
     return [app, rootNode];
@@ -151,14 +148,13 @@
    * @param {Object} app
    */
   function buildRootNode(app) {
-    if (app.template) return [app, stringToDOMDocument((app.template[0] === '#') ? document.querySelector(app.template).innerHTML : app.template)];
-    else return [app, document.getElementById(app.target.slice(1))];
+    if (app.template) return [app, stringToDOMDocument(replaceMustachesWithSpans((app.template[0] === '#') ? document.querySelector(app.template).innerHTML : app.template))];
+    else return [app, replaceMustachesWithSpans(document.getElementById(app.target.slice(1)))];
   }
 
   function createView(app) {
     pipe(
       buildRootNode,
-      replaceMustachesWithSpans,
       buildBindingsForListElements,
       buildBindingsForFormElements,
       populateAllBindings,
@@ -207,7 +203,7 @@
     var fragment = document.createDocumentFragment();
     Array.from(rootNode.childNodes).forEach(fragment.appendChild.bind(fragment));
 
-    target.appendChild(fragment);
+    requestAnimationFrame(() => target.appendChild(fragment));
     return [app, target];
   }
 
@@ -223,7 +219,7 @@
   }
 
   function patchViewOnModelChange(...args) {
-    const app = args[0];
+    var app = args[0];
     if (args.length === 1) return _patch;
     return _patch(...(args.slice(1)));
 
@@ -260,19 +256,25 @@
   function pipe(...funcs) {
     return function _pipe(...args) {
       return funcs.reduce((value, fn, index) => {
-        const result = (index == 0) ? fn.apply(this, value) : fn.call(this, value);
-        return result;
+        return (index == 0) ? fn.apply(this, value) : fn.call(this, value);
       }, args);
     };
   }
 
   function populateAllBindings([app, rootNode, filter = '']) {
-    Object.keys(app.__bindings).forEach(function (path) {
+    for (var path in app.__bindings) {
       if (path.indexOf(filter) === 0) {
         var value = getPathValue(app.data, path);
-        if (value) patchViewOnModelChange(app, null, null, value, null, path, true);
+        if (value) {
+          // get computed value
+          if (typeof value === 'function') value = value.call(app.data);
+
+          app.__bindings[path].forEach(function (binder) {
+            binder(value);
+          });
+        }
       }
-    });
+    }
     return [app, rootNode];
   }
 
@@ -284,9 +286,9 @@
     if (typeof basePath === 'undefined') basePath = '';
     var _target = (isArray) ? original : Object.assign({}, original);
 
-    Object.keys(_target).forEach(function (key) {
+    for (var key in _target) {
       if (typeof _target[key] === 'object') _target[key] = proxyfull(_target[key], handler, logger, basePath + '.' + key, Array.isArray(_target[key]));
-    });
+    }
 
     const _handler = Object.assign({}, handler, {
       set: function (target, property, value, receiver) {
@@ -309,23 +311,18 @@
   }
 
   function saveBinding(app, path, binder) {
+    app.__bindings[path] = app.__bindings[path] || [];
     var value = getPathValue(app.data, path);
     if (typeof value === 'function' && app.__computed.indexOf(path) === -1) app.__computed.push(path);
     app.__bindings[path].push(binder);
   }
 
-  function setEventListenersOnFormElements(app, node, scope, attribute = 'value') {
-    var events = ['onclick', 'onchange', 'onkeypress', 'oninput'];
-    var watcher = getPathValue(app.watch, node.getAttribute('name'));
-    if ((node.hasAttribute('no-bind') === false) && (app.watch === true || watcher === true || node.hasAttribute('bind')))
-      setEventListenersOnElement(node, function () {
+  function setEventListenersOnFormElements(app, node, scope, attribute = 'value', event = 'oninput') {
+    var watcher = getPathValue(app.watch, scope);
+    if ((node.hasAttribute('no-bind') === false) && (app.watch === true || watcher === true || node.hasAttribute('bind'))) {
+      node[event] = function () {
         if (node[attribute] !== getPathValue(app.data, scope)) setPathValue(app.data, scope, node[attribute]);
-      }, ...events);
-
-    function setEventListenersOnElement(node, handler, ...events) {
-      events.forEach(function (e) {
-        node[e] = handler;
-      });
+      }
     }
   }
 
@@ -346,15 +343,14 @@
     return doc.childNodes[1]; // the body element
   }
 
-  function replaceMustachesWithSpans([app, rootNode]) {
-    rootNode.innerHTML = rootNode.innerHTML.replace(/{{(.+?)}}/g, function (match, path) {
+  function replaceMustachesWithSpans(arg) {
+    if (arg instanceof Node) {
+      arg.innerHTML = replaceMustachesWithSpans(arg.innerHTML);
+      return arg;
+    }
+    return arg.replace(/{{(.+?)}}/g, function (match, path) {
       return `<span name="${path.trim()}"></span>`;
     });
-    return [app, rootNode];
-  }
-
-  function touchBinding(app, path) {
-    app.__bindings[path] = app.__bindings[path] || [];
   }
 
   return butterfly;
